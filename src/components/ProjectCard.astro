@@ -1,0 +1,33 @@
+---
+import type { Project } from '../data/research';
+import Icon from './Icon.astro';
+interface Props { project: Project; index?: number }
+const { project: p, index = 0 } = Astro.props;
+---
+<a href={`/research#${p.slug}`} class="pcard card reveal" style={`--c: var(--${p.accent}); transition-delay:${index * 80}ms`}>
+  <div class="art" aria-hidden="true"><span></span></div>
+  <div class="inner">
+    <div class="years">{p.years}</div>
+    <h3>{p.title}</h3>
+    <p>{p.tagline}</p>
+    <div class="facs">{p.facilities.map((f) => <span class="chip">{f}</span>)}</div>
+    <span class="read">Read the story <Icon name="arrow" size={15} /></span>
+  </div>
+</a>
+<style>
+  .pcard { display: flex; flex-direction: column; overflow: hidden; transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s, border-color .35s; }
+  .pcard:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--c) 45%, var(--line)); box-shadow: 0 24px 48px -24px color-mix(in srgb, var(--c) 50%, transparent); }
+  .art { height: 132px; position: relative; overflow: hidden; background: color-mix(in srgb, var(--c) 10%, var(--bg-soft)); }
+  .art span { position: absolute; inset: -20%; background:
+      repeating-linear-gradient(100deg, transparent 0 9px, color-mix(in srgb, var(--c) 65%, transparent) 9px 11px);
+    mask-image: radial-gradient(ellipse 55% 70% at 50% 60%, #000 20%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 55% 70% at 50% 60%, #000 20%, transparent 70%);
+    transition: transform 1.2s cubic-bezier(.2,.7,.2,1); }
+  .pcard:hover .art span { transform: translateX(22px) rotate(-2deg); }
+  .inner { padding: 22px 22px 24px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .years { font-size: 13px; color: var(--ink-mute); font-weight: 550; }
+  h3 { font-size: 23px; }
+  p { margin: 0; color: var(--ink-soft); font-size: 15.5px; }
+  .facs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .read { margin-top: auto; padding-top: 12px; font-size: 14.5px; font-weight: 600; color: var(--c); display: inline-flex; align-items: center; gap: 6px; }
+</style>

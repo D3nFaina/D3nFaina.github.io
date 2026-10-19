@@ -1,0 +1,142 @@
+---
+import Base from '../layouts/Base.astro';
+import Grating from '../components/Grating.astro';
+import Icon from '../components/Icon.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import PubItem from '../components/PubItem.astro';
+import { profile, stats, news } from '../data/profile';
+import { projects } from '../data/research';
+import { publications } from '../data/publications';
+
+const featured = projects.filter((p) => p.featured);
+const selected = publications.filter((p) => p.first && !p.status).slice(0, 4);
+const initials = profile.name.split(' ').map((w) => w[0]).join('');
+---
+<Base>
+  <section class="hero">
+    <Grating />
+    <div class="container hero-inner">
+      <div class="hero-text">
+        <span class="eyebrow">{profile.role}</span>
+        <h1>{profile.name.split(' ')[0]} <span class="grad">{profile.name.split(' ').slice(1).join(' ')}</span></h1>
+        <p class="pitch">{profile.pitch}</p>
+        <p class="aff"><Icon name="pin" size={16} /> {profile.affiliation}</p>
+        <div class="ctas">
+          <a class="btn primary" href="/research">Explore my research <Icon name="arrow" size={16} /></a>
+          <a class="btn" href={profile.cvPdf}><Icon name="download" size={16} /> CV</a>
+        </div>
+        <div class="socials">
+          {profile.links.github && <a href={profile.links.github}><Icon name="github" /> GitHub</a>}
+          {profile.links.orcid && <a href={profile.links.orcid}><Icon name="orcid" /> ORCID</a>}
+          {profile.links.scholar && <a href={profile.links.scholar}><Icon name="scholar" /> Scholar</a>}
+          <a href={`mailto:${profile.email}`}><Icon name="mail" /> Email</a>
+        </div>
+      </div>
+      <div class="portrait">
+        {profile.photo
+          ? <img src={profile.photo} alt={profile.name} width="280" height="280" />
+          : <div class="ph" aria-hidden="true">{initials}</div>}
+      </div>
+    </div>
+  </section>
+
+  <section class="container">
+    <div class="stats card reveal">
+      {stats.map((s) => (
+        <div class="stat"><div class="v">{s.value}</div><div class="l">{s.label}</div></div>
+      ))}
+    </div>
+  </section>
+
+  <section class="section container about">
+    <div class="reveal">
+      <span class="eyebrow">About</span>
+      <h2>Making matter's fastest, smallest motions visible.</h2>
+    </div>
+    <div class="reveal">
+      {profile.bio.map((p) => <p>{p}</p>)}
+    </div>
+  </section>
+
+  <section class="section container">
+    <div class="section-title">
+      <div><span class="eyebrow">Research</span><h2>Selected projects</h2></div>
+      <a class="more" href="/research">All projects <Icon name="arrow" size={15} /></a>
+    </div>
+    <div class="grid3">
+      {featured.map((p, i) => <ProjectCard project={p} index={i} />)}
+    </div>
+  </section>
+
+  <section class="section container split">
+    <div>
+      <div class="section-title">
+        <div><span class="eyebrow">Publications</span><h2>First-author highlights</h2></div>
+        <a class="more" href="/publications">All {publications.length} <Icon name="arrow" size={15} /></a>
+      </div>
+      <div class="reveal">{selected.map((p) => <PubItem pub={p} compact />)}</div>
+    </div>
+    <aside class="news card reveal">
+      <span class="eyebrow">News</span>
+      <ul>
+        {news.map((n) => <li><span class="d">{n.date}</span><span>{n.text}</span></li>)}
+      </ul>
+    </aside>
+  </section>
+</Base>
+
+<style>
+  .hero { position: relative; overflow: hidden; padding: 96px 0 80px; }
+  .hero-inner { position: relative; display: grid; grid-template-columns: 1.4fr 1fr; gap: 48px; align-items: center; }
+  .hero h1 { font-size: clamp(52px, 9vw, 108px); margin-top: 18px; font-weight: 450; letter-spacing: -0.035em; }
+  .grad { font-style: italic; background: linear-gradient(100deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .06em; }
+  .pitch { font-size: clamp(19px, 2.1vw, 23px); color: var(--ink-soft); max-width: 560px; margin: 24px 0 0; line-height: 1.5; }
+  .aff { display: flex; align-items: center; gap: 8px; color: var(--ink-mute); font-size: 15px; margin: 18px 0 0; }
+  .ctas { display: flex; gap: 10px; margin-top: 30px; flex-wrap: wrap; }
+  .socials { display: flex; gap: 18px; margin-top: 26px; flex-wrap: wrap; }
+  .socials a { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); font-size: 14.5px; font-weight: 500; transition: color .2s; }
+  .socials a:hover { color: var(--accent); }
+  .portrait { justify-self: end; }
+  .portrait img, .ph {
+    width: min(300px, 32vw); aspect-ratio: 1; border-radius: 32% 68% 55% 45% / 45% 40% 60% 55%;
+    object-fit: cover; box-shadow: 0 30px 60px -30px var(--glow), var(--shadow);
+    border: 1px solid var(--line);
+  }
+  .ph {
+    display: grid; place-items: center; font-family: var(--font-display); font-size: 84px; color: var(--accent-ink);
+    background: linear-gradient(140deg, var(--accent), var(--accent-2));
+  }
+  @media (max-width: 860px) {
+    .hero { padding: 56px 0 48px; }
+    .hero-inner { grid-template-columns: 1fr; gap: 32px; }
+    .portrait { justify-self: start; order: -1; }
+    .portrait img, .ph { width: 128px; font-size: 44px; }
+  }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px; }
+  .stat { padding: 22px 20px; border-right: 1px solid var(--line); }
+  .stat:last-child { border-right: 0; }
+  .v { font-family: var(--font-display); font-size: clamp(30px, 3.6vw, 42px); line-height: 1; }
+  .l { color: var(--ink-mute); font-size: 14px; margin-top: 8px; }
+  @media (max-width: 760px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .stat:nth-child(2) { border-right: 0; }
+    .stat:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+  }
+
+  .about { display: grid; grid-template-columns: 1fr 1.3fr; gap: 48px; padding-top: 88px; }
+  .about h2 { font-size: clamp(30px, 3.6vw, 44px); margin-top: 12px; }
+  .about p { margin: 0 0 16px; color: var(--ink-soft); font-size: 18px; }
+  @media (max-width: 860px) { .about { grid-template-columns: 1fr; gap: 16px; padding-top: 56px; } }
+
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 960px) { .grid3 { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 640px) { .grid3 { grid-template-columns: 1fr; } }
+
+  .split { display: grid; grid-template-columns: 1.6fr 1fr; gap: 40px; align-items: start; }
+  @media (max-width: 960px) { .split { grid-template-columns: 1fr; } }
+  .news { padding: 26px; position: sticky; top: 88px; }
+  .news ul { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 16px; }
+  .news li { display: grid; grid-template-columns: 48px 1fr; gap: 12px; font-size: 15px; color: var(--ink-soft); line-height: 1.5; }
+  .news .d { font-weight: 650; color: var(--ink); font-size: 13.5px; padding-top: 2px; }
+</style>

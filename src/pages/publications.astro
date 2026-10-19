@@ -1,0 +1,60 @@
+---
+import Base from '../layouts/Base.astro';
+import PubItem from '../components/PubItem.astro';
+import { publications, talks } from '../data/publications';
+import { profile } from '../data/profile';
+const years = [...new Set(publications.map((p) => p.year))].sort((a, b) => b - a);
+const firstCount = publications.filter((p) => p.first).length;
+---
+<Base title="Publications" description="Peer-reviewed publications and talks.">
+  <header class="container page-head">
+    <span class="eyebrow">Publications & talks</span>
+    <h1>Publications</h1>
+    <p>{publications.length} papers, {firstCount} as first author. The full, always-current list is on <a href={profile.links.orcid}>ORCID</a>{profile.links.scholar && <> and <a href={profile.links.scholar}>Google Scholar</a></>}.</p>
+    <div class="filters" role="tablist">
+      <button class="f on" data-f="all">All</button>
+      <button class="f" data-f="first">First author</button>
+    </div>
+  </header>
+
+  <div class="container list">
+    {years.map((y) => (
+      <section class="yr reveal">
+        {publications.filter((p) => p.year === y).map((p) => (
+          <div class="row" data-first={p.first ? '1' : '0'}><PubItem pub={p} /></div>
+        ))}
+      </section>
+    ))}
+  </div>
+
+  <section class="container section">
+    <div class="section-title"><div><span class="eyebrow">Talks</span><h2>Talks & seminars</h2></div></div>
+    <div class="talks">
+      {talks.map((t) => (
+        <div class="talk card">
+          <span class="chip">{t.kind}</span>
+          <div class="tt">{t.title}</div>
+          <div class="te">{t.event} · {t.place} · {t.year}</div>
+        </div>
+      ))}
+    </div>
+  </section>
+</Base>
+<script>
+  const btns = document.querySelectorAll<HTMLButtonElement>('.f');
+  btns.forEach((b) => b.addEventListener('click', () => {
+    btns.forEach((x) => x.classList.toggle('on', x === b));
+    const only = b.dataset.f === 'first';
+    document.querySelectorAll<HTMLElement>('.row').forEach((r) => { r.hidden = only && r.dataset.first !== '1'; });
+  }));
+</script>
+<style>
+  .filters { display: inline-flex; gap: 4px; padding: 4px; margin-top: 26px; border-radius: 999px; background: var(--bg-soft); border: 1px solid var(--line); }
+  .f { border: 0; background: transparent; color: var(--ink-soft); font: inherit; font-size: 14.5px; font-weight: 550; padding: 8px 16px; border-radius: 999px; cursor: pointer; }
+  .f.on { background: var(--bg-elev); color: var(--ink); box-shadow: var(--shadow); }
+  .list { border-bottom: 1px solid var(--line); }
+  .talks { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .talk { padding: 20px; }
+  .tt { font-weight: 600; margin-top: 10px; }
+  .te { color: var(--ink-mute); font-size: 14.5px; margin-top: 4px; }
+</style>

@@ -1,0 +1,74 @@
+---
+import Base from '../layouts/Base.astro';
+import { projects } from '../data/research';
+import { publications } from '../data/publications';
+const byDoi = new Map(publications.map((p) => [p.doi, p]));
+---
+<Base title="Research" description="Research projects: nonlinear EUV and X-ray spectroscopy, transient gratings, ultrafast imaging.">
+  <header class="container page-head">
+    <span class="eyebrow">Research</span>
+    <h1>Watching nanoscale dynamics with <em>X-ray light</em></h1>
+    <p>Transient gratings use interfering light pulses to write a nanoscale pattern into a sample and watch how it fades. Extending this to EUV and hard X-rays lets us follow heat, sound and spin at length scales no optical laser can reach.</p>
+  </header>
+
+  <div class="container stories">
+    {projects.map((p, i) => (
+      <article id={p.slug} class="story reveal" style={`--c: var(--${p.accent})`}>
+        <div class="side">
+          <div class="num">0{i + 1}</div>
+          <div class="years">{p.years}</div>
+          <div class="facs">{p.facilities.map((f) => <span class="chip">{f}</span>)}</div>
+        </div>
+        <div class="main card">
+          <h2>{p.title}</h2>
+          <p class="tag">{p.tagline}</p>
+          <div class="steps">
+            <div><h3>Question</h3><p>{p.question}</p></div>
+            <div><h3>Approach</h3><p>{p.approach}</p></div>
+            <div><h3>Result</h3><p>{p.result}</p></div>
+          </div>
+          {p.papers.length > 0 && (
+            <div class="refs">
+              <h4>Papers</h4>
+              <ul>
+                {p.papers.map((d) => {
+                  const pub = byDoi.get(d);
+                  return <li><a href={`https://doi.org/${d}`} target="_blank" rel="noopener">{pub ? pub.title : d}</a>{pub && <span> · {pub.venue.split(/\s\d/)[0]} {pub.year}</span>}</li>;
+                })}
+              </ul>
+            </div>
+          )}
+        </div>
+      </article>
+    ))}
+  </div>
+</Base>
+<style>
+  h1 em { font-style: italic; color: var(--accent); }
+  .stories { display: grid; gap: 36px; }
+  .story { display: grid; grid-template-columns: 180px 1fr; gap: 28px; scroll-margin-top: 90px; }
+  .side { position: sticky; top: 96px; align-self: start; }
+  .num { font-family: var(--font-display); font-size: 56px; line-height: 1; color: var(--c); }
+  .years { color: var(--ink-mute); font-size: 14px; margin: 10px 0 12px; font-weight: 550; }
+  .facs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .main { padding: 34px; position: relative; overflow: hidden; }
+  .main::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--c); }
+  .main h2 { font-size: clamp(28px, 3.2vw, 38px); }
+  .tag { color: var(--ink-soft); margin: 8px 0 26px; font-size: 18px; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+  .steps h3 { font-family: var(--font-sans); font-size: 12.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--c); margin-bottom: 8px; }
+  .steps p { margin: 0; color: var(--ink-soft); font-size: 16px; }
+  .refs { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }
+  .refs h4 { font-family: var(--font-sans); font-size: 13px; font-weight: 650; color: var(--ink-mute); margin-bottom: 8px; }
+  .refs ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 15px; color: var(--ink-mute); }
+  .refs a { color: var(--ink); font-weight: 500; }
+  .refs a:hover { color: var(--accent); }
+  @media (max-width: 900px) {
+    .story { grid-template-columns: 1fr; gap: 14px; }
+    .side { position: static; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .num { font-size: 36px; }
+    .years { margin: 0; }
+    .steps { grid-template-columns: 1fr; gap: 18px; }
+    .main { padding: 24px; }
+  }
+</style>

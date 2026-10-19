@@ -1,0 +1,33 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+export async function getStaticPaths() {
+  const notes = await getCollection('notes');
+  return notes.map((note) => ({ params: { id: note.id }, props: { note } }));
+}
+const { note } = Astro.props;
+const { Content } = await render(note);
+const date = note.data.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+---
+<Base title={note.data.title} description={note.data.summary}>
+  <article class="container prose">
+    <a class="back" href="/notes">← All notes</a>
+    <div class="meta">{date}</div>
+    <h1>{note.data.title}</h1>
+    <p class="lead">{note.data.summary}</p>
+    <div class="body"><Content /></div>
+  </article>
+</Base>
+<style>
+  .prose { max-width: 720px; padding-top: 64px; }
+  .back { color: var(--ink-mute); font-size: 14.5px; }
+  .back:hover { color: var(--accent); }
+  .meta { color: var(--accent); font-weight: 600; font-size: 14px; margin-top: 28px; }
+  h1 { font-size: clamp(36px, 5vw, 54px); margin-top: 10px; }
+  .lead { font-size: 21px; color: var(--ink-soft); margin: 18px 0 36px; }
+  .body { font-size: 18.5px; line-height: 1.75; }
+  .body :global(p) { margin: 0 0 1.2em; }
+  .body :global(h2) { font-size: 30px; margin: 1.6em 0 .6em; }
+  .body :global(code) { font-size: .88em; background: var(--bg-soft); padding: 2px 6px; border-radius: 6px; }
+  .body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+</style>

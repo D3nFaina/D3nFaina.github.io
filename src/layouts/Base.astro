@@ -1,0 +1,165 @@
+---
+import '../styles/global.css';
+import Icon from '../components/Icon.astro';
+import { profile } from '../data/profile';
+
+interface Props { title?: string; description?: string }
+const { title, description = profile.pitch } = Astro.props;
+const fullTitle = title ? `${title} · ${profile.name}` : `${profile.name} · ${profile.role}`;
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+
+const nav = [
+  { href: '/research', label: 'Research' },
+  { href: '/publications', label: 'Publications' },
+  { href: '/cv', label: 'CV' },
+  { href: '/interests', label: 'Interests' },
+  { href: '/travels', label: 'Travels' },
+  { href: '/notes', label: 'Notes' },
+];
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const year = new Date().getFullYear();
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      name: profile.name,
+      jobTitle: profile.role,
+      affiliation: { '@type': 'Organization', name: profile.affiliation },
+      url: Astro.site,
+      sameAs: Object.values(profile.links).filter(Boolean),
+    })} />
+    <script is:inline>
+      (() => {
+        let t;
+        try { t = localStorage.getItem('theme'); } catch (e) {}
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container bar">
+        <a href="/" class="brand" aria-label="Home">
+          <span class="mark" aria-hidden="true"></span>
+          <span>{profile.name}</span>
+        </a>
+        <nav class="nav" id="nav">
+          {nav.map((n) => (
+            <a href={n.href} class:list={{ active: path.startsWith(n.href) }}>{n.label}</a>
+          ))}
+        </nav>
+        <div class="tools">
+          <button class="icon-btn" id="theme" aria-label="Toggle dark mode">
+            <span class="sun"><Icon name="sun" /></span><span class="moon"><Icon name="moon" /></span>
+          </button>
+          <button class="icon-btn menu-btn" id="menu" aria-label="Menu" aria-expanded="false"><Icon name="menu" /></button>
+        </div>
+      </div>
+    </header>
+
+    <main><slot /></main>
+
+    <footer class="site-footer">
+      <div class="container foot">
+        <div>
+          <div class="foot-name">{profile.title}</div>
+          <div class="foot-sub">{profile.affiliation}</div>
+        </div>
+        <div class="foot-links">
+          {profile.links.github && <a href={profile.links.github} aria-label="GitHub"><Icon name="github" /></a>}
+          {profile.links.orcid && <a href={profile.links.orcid} aria-label="ORCID"><Icon name="orcid" /></a>}
+          {profile.links.scholar && <a href={profile.links.scholar} aria-label="Google Scholar"><Icon name="scholar" /></a>}
+          {profile.links.linkedin && <a href={profile.links.linkedin} aria-label="LinkedIn"><Icon name="linkedin" /></a>}
+          <a href={`mailto:${profile.email}`} aria-label="Email"><Icon name="mail" /></a>
+        </div>
+      </div>
+      <div class="container copy">© {year} {profile.name} · Built with Astro, hosted on GitHub Pages</div>
+    </footer>
+
+    <script>
+      const root = document.documentElement;
+      document.getElementById('theme')?.addEventListener('click', () => {
+        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        try { localStorage.setItem('theme', next); } catch (e) {}
+        window.dispatchEvent(new CustomEvent('themechange'));
+      });
+      const menu = document.getElementById('menu');
+      menu?.addEventListener('click', () => {
+        const open = document.body.classList.toggle('nav-open');
+        menu.setAttribute('aria-expanded', String(open));
+      });
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      }, { rootMargin: '0px 0px -8% 0px' });
+      document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+    </script>
+
+    <style>
+      .site-header {
+        position: sticky; top: 0; z-index: 50;
+        backdrop-filter: saturate(160%) blur(14px);
+        -webkit-backdrop-filter: saturate(160%) blur(14px);
+        background: color-mix(in srgb, var(--bg) 78%, transparent);
+        border-bottom: 1px solid var(--line);
+      }
+      .bar { display: flex; align-items: center; gap: 24px; height: 64px; }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: -0.01em; white-space: nowrap; }
+      .mark {
+        width: 22px; height: 22px; border-radius: 7px;
+        background:
+          repeating-linear-gradient(90deg, transparent 0 3px, rgba(255,255,255,.55) 3px 4.5px),
+          linear-gradient(135deg, var(--violet), var(--cyan));
+      }
+      .nav { display: flex; gap: 4px; margin-left: auto; }
+      .nav a { padding: 7px 12px; border-radius: 999px; font-size: 15px; color: var(--ink-soft); transition: color .2s, background .2s; }
+      .nav a:hover { color: var(--ink); background: var(--bg-soft); }
+      .nav a.active { color: var(--ink); background: var(--bg-soft); }
+      .tools { display: flex; gap: 6px; }
+      .icon-btn {
+        width: 38px; height: 38px; display: grid; place-items: center;
+        border-radius: 999px; border: 1px solid var(--line); background: var(--bg-elev); color: var(--ink);
+        cursor: pointer; transition: border-color .2s;
+      }
+      .icon-btn:hover { border-color: var(--accent); }
+      :global([data-theme='dark']) .sun, :global([data-theme='light']) .moon { display: none; }
+      .sun, .moon { display: grid; }
+      .menu-btn { display: none; }
+      @media (max-width: 860px) {
+        .menu-btn { display: grid; }
+        .tools { margin-left: auto; }
+        .nav {
+          position: fixed; inset: 64px 0 auto 0; flex-direction: column; gap: 0; padding: 8px 16px 16px;
+          background: var(--bg); border-bottom: 1px solid var(--line);
+          transform: translateY(-8px); opacity: 0; pointer-events: none; transition: all .2s ease;
+        }
+        .nav a { padding: 12px; border-radius: 12px; font-size: 17px; }
+        :global(body.nav-open) .nav { transform: none; opacity: 1; pointer-events: auto; }
+      }
+      .site-footer { border-top: 1px solid var(--line); margin-top: 80px; padding: 40px 0 28px; }
+      .foot { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+      .foot-name { font-family: var(--font-display); font-size: 20px; }
+      .foot-sub { color: var(--ink-mute); font-size: 14.5px; }
+      .foot-links { display: flex; gap: 8px; }
+      .foot-links a { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-soft); transition: all .2s; }
+      .foot-links a:hover { color: var(--accent); border-color: var(--accent); }
+      .copy { color: var(--ink-mute); font-size: 13px; margin-top: 24px; }
+    </style>
+  </body>
+</html>

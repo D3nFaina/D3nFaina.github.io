@@ -1,0 +1,29 @@
+---
+import Base from '../layouts/Base.astro';
+import { interests } from '../data/life';
+---
+<Base title="Interests" description="Life outside the lab.">
+  <header class="container page-head">
+    <span class="eyebrow">Beyond the lab</span>
+    <h1>Interests</h1>
+    <p>What I do when the beamtime is over.</p>
+  </header>
+  <div class="container grid">
+    {interests.map((it, i) => (
+      <article class="card it reveal" style={`transition-delay:${i * 70}ms`}>
+        <div class="emo" aria-hidden="true">{it.emoji}</div>
+        <h2>{it.title}</h2>
+        <p>{it.text}</p>
+      </article>
+    ))}
+  </div>
+</Base>
+<style>
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .it { padding: 30px; transition: transform .3s, border-color .3s; }
+  .it:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .emo { font-size: 34px; width: 64px; height: 64px; display: grid; place-items: center; border-radius: 18px; background: var(--bg-soft); }
+  h2 { font-size: 26px; margin-top: 20px; }
+  p { color: var(--ink-soft); margin: 10px 0 0; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+</style>

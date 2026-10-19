@@ -1,0 +1,37 @@
+---
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import { getCollection } from 'astro:content';
+const notes = (await getCollection('notes')).sort((a, b) => +b.data.date - +a.data.date);
+const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+---
+<Base title="Notes" description="Notes, explainers and random stuff.">
+  <header class="container page-head">
+    <span class="eyebrow">Notes</span>
+    <h1>Notes & random stuff</h1>
+    <p>Explainers, beamtime diaries, code snippets and whatever else is on my mind.</p>
+  </header>
+  <div class="container list">
+    {notes.map((n) => (
+      <a class="note reveal" href={`/notes/${n.id}`}>
+        <div class="d">{fmt(n.data.date)}</div>
+        <div>
+          <h2>{n.data.title}</h2>
+          <p>{n.data.summary}</p>
+          <div class="tags">{n.data.tags.map((t) => <span class="chip">{t}</span>)}</div>
+        </div>
+        <Icon name="arrow" />
+      </a>
+    ))}
+  </div>
+</Base>
+<style>
+  .note { display: grid; grid-template-columns: 120px 1fr auto; gap: 24px; padding: 28px 0; border-top: 1px solid var(--line); align-items: start; color: var(--ink-mute); }
+  .note:last-child { border-bottom: 1px solid var(--line); }
+  .note h2 { font-size: 26px; color: var(--ink); transition: color .2s; }
+  .note:hover h2 { color: var(--accent); }
+  .note p { margin: 8px 0 12px; color: var(--ink-soft); }
+  .d { font-size: 14px; padding-top: 6px; }
+  .tags { display: flex; gap: 6px; }
+  @media (max-width: 640px) { .note { grid-template-columns: 1fr; gap: 6px; } .note > :global(svg) { display: none; } }
+</style>
