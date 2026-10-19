@@ -7,7 +7,7 @@ export const profile = {
   affiliation: 'Institute of Applied Physics, University of Bern',
   location: 'Bern, Switzerland',
   // Drop a square photo at public/portrait.jpg and set this to '/portrait.jpg'.
-  photo: '',
+  photo: '/portrait.jpg',
   pitch:
     'I develop nonlinear X-ray spectroscopies that watch heat, sound and spin move through matter on the nanometre and femtosecond scale.',
   bio: [

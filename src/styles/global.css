@@ -82,7 +82,7 @@ h1, h2, h3, h4 {
 }
 .eyebrow::before { content: ''; width: 18px; height: 1.5px; background: currentColor; border-radius: 2px; }
 
-.page-head { padding: 88px 0 40px; }
+.page-head { padding-top: 88px; padding-bottom: 40px; }
 .page-head h1 { font-size: clamp(40px, 6vw, 68px); margin-top: 14px; }
 .page-head p { color: var(--ink-soft); max-width: 640px; font-size: 19px; margin: 18px 0 0; }
 

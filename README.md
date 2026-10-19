@@ -11,6 +11,7 @@ All content lives in `src/data/`:
 | `profile.ts` | name, pitch, bio, links (GitHub, ORCID, Scholar), stats, news |
 | `research.ts` | research projects, each as question → approach → result |
 | `publications.ts` | selected papers and talks |
+| `projects.ts` | side projects and code (Projects page) |
 | `life.ts` | CV timeline, interests, places on the travel map |
 
 - Notes / blog posts: add a Markdown file to `src/content/notes/`.
@@ -26,6 +27,8 @@ npm run build    # static site in dist/
 ```
 
 ## Deploy
+
+The hero background is a random featured photo of Japan from Wikimedia Commons, re-picked on every deploy by `scripts/fetch-japan.mjs` (credit shown in the corner).
 
 Pushing to `main` runs `.github/workflows/deploy.yml`, which builds and publishes the site.
 One-time setup: repository **Settings → Pages → Source: GitHub Actions**.

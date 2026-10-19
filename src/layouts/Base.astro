@@ -11,6 +11,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const nav = [
   { href: '/research', label: 'Research' },
   { href: '/publications', label: 'Publications' },
+  { href: '/projects', label: 'Projects' },
   { href: '/cv', label: 'CV' },
   { href: '/interests', label: 'Interests' },
   { href: '/travels', label: 'Travels' },
@@ -141,7 +142,7 @@ const year = new Date().getFullYear();
       :global([data-theme='dark']) .sun, :global([data-theme='light']) .moon { display: none; }
       .sun, .moon { display: grid; }
       .menu-btn { display: none; }
-      @media (max-width: 860px) {
+      @media (max-width: 980px) {
         .menu-btn { display: grid; }
         .tools { margin-left: auto; }
         .nav {

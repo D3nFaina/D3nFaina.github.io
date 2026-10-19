@@ -1,0 +1,61 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { sideProjects } from '../data/projects';
+import { profile } from '../data/profile';
+const groups = [
+  { kind: 'lab', title: 'Lab software', sub: 'Code that runs experiments and turns shots into physics.' },
+  { kind: 'app', title: 'Apps & tools', sub: 'Things I built for fun or for myself.' },
+  { kind: 'script', title: 'Python scripts', sub: 'Small, useful, occasionally catastrophic.' },
+] as const;
+---
+<Base title="Projects" description="Side projects, lab software and code.">
+  <header class="container page-head">
+    <span class="eyebrow">Code & side projects</span>
+    <h1>Things I've built</h1>
+    <p>Instrument control, data pipelines, and side projects. Most of it lives on <a href={profile.links.github}>GitHub</a>.</p>
+  </header>
+  <div class="container">
+    {groups.map((g) => {
+      const items = sideProjects.filter((p) => p.kind === g.kind);
+      if (items.length === 0) return null;
+      return (
+        <section class="grp">
+          <div class="gh reveal"><h2>{g.title}</h2><p>{g.sub}</p></div>
+          <div class="grid">
+            {items.map((p, i) => {
+              const Tag = p.url ? 'a' : 'div';
+              return (
+                <Tag class="proj card reveal" href={p.url} target={p.url ? '_blank' : undefined} rel={p.url ? 'noopener' : undefined} style={`transition-delay:${i * 60}ms`}>
+                  <h3>{p.title}</h3>
+                  <p>{p.blurb}</p>
+                  <div class="tags">{p.tags.map((t) => <span class="chip">{t}</span>)}</div>
+                  <div class="foot">
+                    {p.url
+                      ? <span class="link"><Icon name="github" size={16} /> {p.linkLabel ?? 'Open'} <Icon name="arrow" size={14} /></span>
+                      : <span class="muted">{p.status}</span>}
+                  </div>
+                </Tag>
+              );
+            })}
+          </div>
+        </section>
+      );
+    })}
+  </div>
+</Base>
+<style>
+  .grp { margin-bottom: 56px; }
+  .gh { margin-bottom: 20px; }
+  .gh h2 { font-size: clamp(26px, 3vw, 34px); }
+  .gh p { color: var(--ink-mute); margin: 6px 0 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+  .proj { padding: 24px; display: flex; flex-direction: column; gap: 10px; transition: transform .3s, border-color .3s; }
+  a.proj:hover { transform: translateY(-3px); border-color: var(--accent); }
+  h3 { font-size: 22px; }
+  .proj p { margin: 0; color: var(--ink-soft); font-size: 15.5px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .foot { margin-top: auto; padding-top: 8px; font-size: 14.5px; }
+  .link { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-weight: 600; }
+  .muted { color: var(--ink-mute); }
+</style>

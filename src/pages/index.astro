@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import Grating from '../components/Grating.astro';
+import { readFileSync } from 'node:fs';
 import Icon from '../components/Icon.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import PubItem from '../components/PubItem.astro';
@@ -10,11 +10,21 @@ import { publications } from '../data/publications';
 
 const featured = projects.filter((p) => p.featured);
 const selected = publications.filter((p) => p.first && !p.status).slice(0, 4);
+// Random Japan background: picked at build time by scripts/fetch-japan.mjs.
+let japan: { src: string; title: string; artist: string; license: string; page: string }[] = [];
+try { japan = JSON.parse(readFileSync('public/japan/manifest.json', 'utf8')); } catch {}
+if (japan.length === 0) japan = [{
+  src: 'https://commons.wikimedia.org/wiki/Special:FilePath/Tsunami_by_hokusai_19th_century.jpg?width=2000',
+  title: 'The Great Wave off Kanagawa', artist: 'Katsushika Hokusai', license: 'Public domain',
+  page: 'https://commons.wikimedia.org/wiki/File:Tsunami_by_hokusai_19th_century.jpg',
+}];
 const initials = profile.name.split(' ').map((w) => w[0]).join('');
 ---
 <Base>
-  <section class="hero">
-    <Grating />
+  <section class="hero" data-bg={JSON.stringify(japan)}>
+    <div class="bg" aria-hidden="true"></div>
+    <div class="shade" aria-hidden="true"></div>
+    <a class="credit" target="_blank" rel="noopener"></a>
     <div class="container hero-inner">
       <div class="hero-text">
         <span class="eyebrow">{profile.role}</span>
@@ -85,8 +95,39 @@ const initials = profile.name.split(' ').map((w) => w[0]).join('');
   </section>
 </Base>
 
+<script>
+  const hero = document.querySelector<HTMLElement>('.hero')!;
+  const list = JSON.parse(hero.dataset.bg!);
+  const pick = list[Math.floor(Math.random() * list.length)];
+  const img = new Image();
+  img.onload = () => {
+    const bg = hero.querySelector<HTMLElement>('.bg')!;
+    bg.style.backgroundImage = `url("${img.src}")`;
+    bg.classList.add('on');
+  };
+  img.src = pick.src;
+  const credit = hero.querySelector<HTMLAnchorElement>('.credit')!;
+  credit.href = pick.page;
+  credit.textContent = `${pick.title} · ${pick.artist} · ${pick.license}`;
+</script>
+
 <style>
-  .hero { position: relative; overflow: hidden; padding: 96px 0 80px; }
+  .hero {
+    position: relative; overflow: hidden; padding: 120px 0 110px; margin-top: -65px; padding-top: 185px;
+    --ink: #f6f4fb; --ink-soft: rgba(246, 244, 251, 0.82); --ink-mute: rgba(246, 244, 251, 0.62);
+    --accent: #c4b5ff; --accent-2: #67e8f9; --line: rgba(255, 255, 255, 0.18); --bg-elev: rgba(255, 255, 255, 0.08);
+    color: var(--ink); background: #101018;
+  }
+  .bg { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transform: scale(1.06); transition: opacity 1.4s ease, transform 8s ease-out; }
+  .bg.on { opacity: 1; transform: scale(1); }
+  .shade { position: absolute; inset: 0; background:
+      linear-gradient(90deg, rgba(10, 10, 16, 0.86) 0%, rgba(10, 10, 16, 0.6) 45%, rgba(10, 10, 16, 0.18) 100%),
+      linear-gradient(180deg, rgba(10, 10, 16, 0.5) 0%, transparent 25%, transparent 70%, var(--bg) 100%); }
+  .credit { position: absolute; right: 16px; bottom: 14px; z-index: 2; font-size: 11.5px; color: rgba(255,255,255,.62); max-width: 60%; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+  .credit:hover { color: #fff; }
+  .hero .btn.primary { background: #fff; color: #111; border-color: #fff; }
+  .hero .btn.primary:hover { background: var(--accent); border-color: var(--accent); color: #111; }
+  .hero .btn { backdrop-filter: blur(8px); }
   .hero-inner { position: relative; display: grid; grid-template-columns: 1.4fr 1fr; gap: 48px; align-items: center; }
   .hero h1 { font-size: clamp(52px, 9vw, 108px); margin-top: 18px; font-weight: 450; letter-spacing: -0.035em; }
   .grad { font-style: italic; background: linear-gradient(100deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .06em; }
@@ -107,7 +148,7 @@ const initials = profile.name.split(' ').map((w) => w[0]).join('');
     background: linear-gradient(140deg, var(--accent), var(--accent-2));
   }
   @media (max-width: 860px) {
-    .hero { padding: 56px 0 48px; }
+    .hero { padding: 120px 0 64px; }
     .hero-inner { grid-template-columns: 1fr; gap: 32px; }
     .portrait { justify-self: start; order: -1; }
     .portrait img, .ph { width: 128px; font-size: 44px; }
