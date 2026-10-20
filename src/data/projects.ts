@@ -13,6 +13,15 @@ export type SideProject = {
 
 export const sideProjects: SideProject[] = [
   {
+    title: 'TIMER GUI',
+    blurb:
+      'The analysis software for the EIS-TIMER transient-grating beamline at FERMI. One window replaces the MATLAB scan script, the pump-timing script and the fitting notebook: same numbers, plus propagated error bars, live shot statistics, an automatic ROI finder for pump timing, and 1 to 3 frequency fits of the acoustic response.',
+    tags: ['Python', 'Tkinter', 'Matplotlib', 'HDF5', 'FEL data'],
+    kind: 'lab',
+    url: 'https://github.com/D3nFaina/timer-gui',
+    linkLabel: 'GitHub',
+  },
+  {
     title: 'Transient-absorption acquisition suite',
     blurb:
       'The PyQt5 control software for our transient-absorption setup in Bern: Glaz line cameras, PI delay stage, Thorlabs shutters, and 2D-angle and polarization scans. It has live plotting, shot-to-shot stability diagnostics, HDF5 output, and a hardware-free simulation mode for testing changes before a measurement campaign.',
@@ -39,11 +48,12 @@ export const sideProjects: SideProject[] = [
     linkLabel: 'GitHub',
   },
   {
-    title: 'Running progress tracker',
-    blurb: 'A small notebook that turns my runs into pace and distance trends over time.',
-    tags: ['Python', 'Jupyter', 'pandas'],
+    title: 'Bitcoin Cycle Planner',
+    blurb:
+      'A desktop app that turns a halving-cycle strategy and live market data into a concrete plan: a buy ladder against the power-law floor, monthly buys with a Fear & Greed boost, an exit schedule, backtests over past cycles and next-cycle scenarios. It ships with daily, weekly and monthly Bitcoin price history since 2011 as CSV.',
+    tags: ['Python', 'PyQt6', 'pyqtgraph', 'Data'],
     kind: 'script',
-    url: 'https://github.com/D3nFaina/Random',
+    url: 'https://github.com/D3nFaina/btc-cycle-planner',
     linkLabel: 'GitHub',
   },
   {
