@@ -64,8 +64,8 @@ const balls = [
 
   // The can as an obstacle: a rectangle in stage coordinates.
   let ob = { x0: 0, y0: 0, x1: 0, y1: 0 };
-  const IW = 1860, IH = 1360, PX = 0.48, PY = 1; // photo size (before upscaling) and object-position
-  const DEN = { x0: 720, x1: 1050, y0: 640, y1: 1360 }; // Den and the can, in photo pixels
+  const IW = 3712, IH = 2716, PX = 0.47, PY = 1; // photo size and object-position
+  const DEN = { x0: 1440, x1: 2090, y0: 1380, y1: 2716 }; // Den and the can, in photo pixels
   const measure = () => {
     const s = stage.getBoundingClientRect();
     W = s.width; H = s.height;
@@ -79,7 +79,7 @@ const balls = [
       b.r = Math.max(34, base * Number(b.el.dataset.s));
       b.m = b.r * b.r;
       b.el.style.width = b.el.style.height = `${b.r * 2}px`;
-      b.el.style.fontSize = `${Math.max(12, b.r * 0.27)}px`;
+      b.el.style.fontSize = `${Math.max(17, b.r * 0.4)}px`;
     }
   };
 
@@ -152,10 +152,20 @@ const balls = [
     }
   };
 
-  measure(); sizeRings(); place(); draw();
-  stage.classList.add('ready');
+  // The stage only exists in "cringe" mode (html[data-cringe=on], set by the switch on the
+  // home page), so the physics starts the first time that mode is shown.
+  const on = () => document.documentElement.dataset.cringe === 'on';
+  let started = false;
+  const activate = () => {
+    if (!on()) return;
+    measure(); sizeRings();
+    if (!started) { started = true; place(); last = performance.now(); if (!still) requestAnimationFrame(loop); }
+    draw(performance.now());
+    stage.classList.add('ready');
+  };
 
   const TOP = 64; // keep clear of the header
+  let last = performance.now();
   const step = (dt: number) => {
     for (const b of balls) {
       if (b.held) continue;
@@ -202,18 +212,20 @@ const balls = [
     }
   };
 
-  let last = performance.now(), visible = true;
+  let visible = true;
   const loop = (t: number) => {
     const dt = Math.min(0.033, (t - last) / 1000); last = t;
-    if (visible) { step(dt); draw(t); }
+    if (visible && on()) { step(dt); draw(t); }
     requestAnimationFrame(loop);
   };
-  if (!still) requestAnimationFrame(loop);
+  activate();
+  addEventListener('cringechange', activate);
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; last = performance.now(); }).observe(stage);
   // Dark header while it sits over the stage.
   new IntersectionObserver(([e]) => document.body.classList.toggle('on-stage', e.isIntersecting), { rootMargin: '-64px 0px 0px 0px', threshold: 0 }).observe(stage);
 
   addEventListener('resize', () => {
+    if (!started || !on()) return;
     const ow = W, oh = H;
     measure(); sizeRings();
     for (const b of balls) { b.x *= W / ow; b.y *= H / oh; }
@@ -261,6 +273,9 @@ const balls = [
     background: #1c2129; color: #f3f4fb; isolation: isolate;
     touch-action: pan-y;
   }
+  /* Classic home is the default; the stage replaces it in cringe mode, where the balls are the nav. */
+  :global(html:not([data-cringe='on'])) .stage { display: none; }
+  :global(html[data-cringe='on'] .site-header .nav), :global(html[data-cringe='on'] .site-header .menu-btn) { display: none; }
   :global(body.on-stage .site-header) { background: rgba(30, 30, 36, 0.5); border-bottom-color: rgba(255, 255, 255, 0.08); }
   :global(body.on-stage .site-header .who) { color: #f3f4fb; }
   @media (min-width: 981px) {
@@ -268,13 +283,13 @@ const balls = [
     :global(body.on-stage .site-header .nav a:hover) { color: #fff; background: rgba(255, 255, 255, 0.08); }
   }
   .photo { position: absolute; inset: 0; z-index: -1; }
-  .photo img { width: 100%; height: 100%; object-fit: cover; object-position: 48% 100%; display: block; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; object-position: 47% 100%; display: block; }
 
   .balls { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
   .ball {
     position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: auto;
     display: grid; place-items: center; text-align: center; user-select: none; -webkit-user-select: none;
-    color: #14162a; font-weight: 650; letter-spacing: -0.01em; cursor: grab; touch-action: none;
+    color: #14162a; font-family: 'Caveat', cursive; font-weight: 600; letter-spacing: 0; cursor: grab; touch-action: none;
     opacity: 0; transition: opacity .6s ease, scale .25s ease;
     will-change: transform; isolation: isolate;
   }
