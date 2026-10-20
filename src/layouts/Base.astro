@@ -57,8 +57,8 @@ const year = new Date().getFullYear();
     <header class="site-header">
       <div class="container bar">
         <a href="/" class="brand" aria-label="Home">
-          <span class="mark" aria-hidden="true"></span>
-          <span>{profile.name}</span>
+          <img class="avatar" src={profile.photo} alt="" width="34" height="34" />
+          <span class="who">{profile.name}</span>
         </a>
         <nav class="nav" id="nav">
           {nav.map((n) => (
@@ -122,12 +122,8 @@ const year = new Date().getFullYear();
       }
       .bar { display: flex; align-items: center; gap: 24px; height: 64px; }
       .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: -0.01em; white-space: nowrap; }
-      .mark {
-        width: 22px; height: 22px; border-radius: 7px;
-        background:
-          repeating-linear-gradient(90deg, transparent 0 3px, rgba(255,255,255,.55) 3px 4.5px),
-          linear-gradient(135deg, var(--violet), var(--cyan));
-      }
+      .avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1.5px var(--line); }
+      .who { font-family: 'Caveat', cursive; font-weight: 600; font-size: 27px; line-height: 1; letter-spacing: 0; }
       .nav { display: flex; gap: 4px; margin-left: auto; }
       .nav a { padding: 7px 12px; border-radius: 999px; font-size: 15px; color: var(--ink-soft); transition: color .2s, background .2s; }
       .nav a:hover { color: var(--ink); background: var(--bg-soft); }

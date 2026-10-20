@@ -13,6 +13,8 @@ export type Project = {
   papers: string[]; // DOIs, matched against publications.ts
   accent: 'violet' | 'cyan' | 'amber' | 'rose' | 'emerald';
   featured?: boolean;
+  // header photo on the card (public/projects/), with its Wikimedia Commons credit
+  image?: { src: string; credit: string; href: string };
 };
 
 export const projects: Project[] = [
@@ -38,6 +40,7 @@ export const projects: Project[] = [
     ],
     accent: 'violet',
     featured: true,
+    image: { src: '/projects/xtg.jpg', credit: 'LCLS undulator hall · SLAC · public domain', href: 'https://commons.wikimedia.org/wiki/File:Lcls_firstlight_hires-7.jpg' },
   },
   {
     slug: 'euv-tg',
@@ -54,6 +57,7 @@ export const projects: Project[] = [
     papers: ['10.1103/PhysRevLett.132.033802', '10.1063/5.0201769', '10.1038/s41467-024-54799-6', '10.1103/dq8w-62bm', '10.1063/5.0340562', '10.1103/j1rk-j6rt'],
     accent: 'cyan',
     featured: true,
+    image: { src: '/projects/euv-tg.jpg', credit: 'EUV frequency comb · NIST · public domain', href: 'https://commons.wikimedia.org/wiki/File:Extreme_ultraviolet_(EUV)_frequency_comb_(6806854303).jpg' },
   },
   {
     slug: 'imaging',
@@ -70,6 +74,7 @@ export const projects: Project[] = [
     papers: ['10.1364/OPTICA.492730'],
     accent: 'amber',
     featured: true,
+    image: { src: '/projects/imaging.jpg', credit: 'X-ray diffraction pattern · ORNL · CC BY 2.0', href: 'https://commons.wikimedia.org/wiki/File:X-ray_pattern_of_nanocrystals_for_LEDs_(9015958909).jpg' },
   },
   {
     slug: 'spin-waves',
