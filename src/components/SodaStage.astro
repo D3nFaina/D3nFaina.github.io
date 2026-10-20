@@ -1,6 +1,6 @@
 ---
 // Home-page landing: the site's sections as balls bouncing around Den's winged portrait
-// rising out of a "Dr D. Fainozzi" can (Den's own image, public/home/den-can-wall.*). Physics runs below.
+// rising out of a "Dr D. Fainozzi" can (Den's own image, public/home/den-can-wall-v2.*). Physics runs below.
 import Icon from './Icon.astro';
 import { profile, stats } from '../data/profile';
 
@@ -18,8 +18,8 @@ const balls = [
 ---
 <section class="stage" aria-label="Home">
   <picture class="photo">
-    <source srcset="/home/den-can-wall.webp" type="image/webp" />
-    <img src="/home/den-can-wall.jpg" width="3720" height="2720" alt={`${profile.title} in front of painted angel wings, rising out of a Dr D. Fainozzi soda can`} />
+    <source srcset="/home/den-can-wall-v2.webp" type="image/webp" />
+    <img src="/home/den-can-wall-v2.jpg" width="3712" height="2716" alt={`${profile.title} in front of painted angel wings, rising out of a Dr D. Fainozzi soda can`} />
   </picture>
 
   <nav class="balls" aria-label="Sections">
