@@ -1,0 +1,197 @@
+---
+// Print layout for the downloadable CV (public/cv.pdf), modelled on the SNSF CV format and
+// extended to the whole career. Not linked anywhere; scripts/cv-pdf.cjs prints it to PDF.
+import { profile } from '../data/profile';
+import { publications } from '../data/publications';
+
+const pubs = publications;
+const n = (doi: string) => pubs.findIndex((p) => p.doi === doi) + 1;
+const r = (...dois: string[]) => `[${dois.map(n).filter(Boolean).join(', ')}]`;
+const bold = (s: string) => s.replace(/(Fainozzi, D\.)/g, '<b>$1</b>');
+
+const education = [
+  ['PhD / Dr.: Physics', 'Dr. Claudio Masciovecchio', 'University of Trieste, IT', 'Elettra Sincrotrone Trieste; thesis in collaboration with the Paul Scherrer Institute, CH', '11.2017 – 10.2020', '3 years'],
+  ['Master: Condensed Matter Physics', 'Prof. Fulvio Parmigiani', 'University of Trieste, IT', 'Thesis in collaboration with the Kyoto Institute of Technology, JP', '10.2015 – 07.2017', '1 year 10 months'],
+  ['Bachelor: Physics', 'Prof. Fulvio Parmigiani', 'University of Trieste, IT', 'Thesis in collaboration with Elettra Sincrotrone Trieste', '10.2012 – 07.2015', '2 years 10 months'],
+];
+const employment = [
+  ['Advanced Postdoctoral Researcher', 'Prof. Andrea Cannizzo', 'University of Bern, CH', 'Institute of Applied Physics', '03.2024 – present', ''],
+  ['Junior Postdoctoral Researcher', 'Dr. Filippo Bencivenga', 'Elettra Sincrotrone Trieste, IT', 'FERMI Free-Electron Laser, TIMER endstation', '04.2021 – 03.2024', '3 years'],
+  ['Doctoral Researcher', 'Dr. Claudio Masciovecchio', 'Elettra Sincrotrone Trieste, IT', 'FERMI Free-Electron Laser (PhD, University of Trieste)', '11.2017 – 10.2020', '3 years'],
+];
+const stays = [
+  ['Visiting researcher', 'Prof. Keith A. Nelson', 'Massachusetts Institute of Technology, US', 'Optical Faraday-rotation measurements of nanoscale spin waves', '2 months', ''],
+  ['Master thesis research', 'Prof. Fulvio Parmigiani', 'Kyoto Institute of Technology, JP', 'Master thesis project', '2017', ''],
+];
+const facilities = [
+  ['FERMI FEL (Elettra, IT)', 'TIMER endstation', 'EUV transient gratings and EUV imaging: proposer, setup preparation, experiments, data analysis'],
+  ['SwissFEL (PSI, CH)', '', 'First hard X-ray transient grating (X-ray pump / optical probe): preparation, experiment, data analysis'],
+  ['European XFEL (DE)', 'FXE, MID', 'Long-term proposal for X-ray transient gratings: shift leader and lead data analyst'],
+  ['SACLA (JP)', '', 'All hard X-ray transient gratings: experiment and data analysis; campaign coordination'],
+  ['LCLS (SLAC, US)', '', 'All-X-ray transient grating campaign: coordination'],
+];
+const service = [
+  'Member of COST Action CA22148 (NEXT, nonlinear EUV to hard X-ray techniques) since its start; the all-X-ray transient-grating demonstration was a pivot for its creation.',
+  'Shift leader and lead data analyst in the European XFEL long-term proposal developing X-ray transient gratings at FXE and MID.',
+  'Coordinator of experimental campaigns at SACLA and LCLS to advance all-X-ray transient gratings.',
+  'Author of custom analysis codes for FEL four-wave-mixing data, shared with collaborators and students and open-sourced whenever possible.',
+];
+const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex" />
+  <title>CV · {profile.title}</title>
+</head>
+<body data-date={today}>
+  <header class="top">
+    <h1>CV</h1>
+    <div class="name">{profile.title}</div>
+    <div class="meta">Current position: Advanced Postdoctoral Researcher, Institute of Applied Physics, University of Bern</div>
+    <div class="meta">
+      <a href={`mailto:${profile.email}`}>{profile.email}</a> · <a href="https://d3nfaina.github.io">d3nfaina.github.io</a> ·
+      ORCID iD <a href={profile.links.orcid}>0000-0001-7380-8324</a> · <a href={profile.links.github}>github.com/D3nFaina</a>
+    </div>
+  </header>
+
+  <section>
+    <h2>Education</h2>
+    <table>
+      <thead><tr><th>Degree</th><th>Organisation</th><th>Duration</th></tr></thead>
+      <tbody>{education.map(([a, b, c, d, e, f]) => <tr><td>{a}<span>{b}</span></td><td>{c}<span>{d}</span></td><td>{e}<span>{f}</span></td></tr>)}</tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Employment</h2>
+    <table>
+      <thead><tr><th>Role</th><th>Organisation</th><th>Duration</th></tr></thead>
+      <tbody>{employment.map(([a, b, c, d, e, f]) => <tr><td>{a}<span>{b}</span></td><td>{c}<span>{d}</span></td><td>{e}<span>{f}</span></td></tr>)}</tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Research stays abroad</h2>
+    <table>
+      <thead><tr><th>Role</th><th>Organisation</th><th>Duration</th></tr></thead>
+      <tbody>{stays.map(([a, b, c, d, e]) => <tr><td>{a}<span>{b}</span></td><td>{c}<span>{d}</span></td><td>{e}</td></tr>)}</tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Large-scale facilities</h2>
+    <p class="lead">More than ten years of experiments with femtosecond EUV and X-ray free-electron lasers, plus ultrafast optical tabletop setups.</p>
+    <table class="fac">
+      <thead><tr><th>Facility</th><th>Endstation</th><th>Role</th></tr></thead>
+      <tbody>{facilities.map(([a, b, c]) => <tr><td>{a}</td><td>{b}</td><td>{c}</td></tr>)}</tbody>
+    </table>
+  </section>
+
+  <section class="ach">
+    <h2>Major achievements</h2>
+
+    <h3>Achievement 1 · Nanoscale acoustics and heat with EUV transient gratings</h3>
+    <p>
+      In a transient grating (TG) experiment two time-coincident pump pulses of wavelength λ cross on the sample at an angle 2θ and write a
+      spatial modulation of excitation with period Λ = λ/(2 sin θ); a delayed probe pulse diffracts from it and reads out how it evolves.
+      Free-electron lasers extend this approach into the extreme ultraviolet {r('10.1016/j.pacs.2023.100453')}, giving contactless access to
+      thermoelastic dynamics at length scales no optical laser can reach.
+    </p>
+    <p>
+      At the TIMER endstation of the FERMI FEL I acted as proposer, setup preparator, experimentalist and data analyst, and wrote the analysis
+      codes shared with collaborators and students. I demonstrated stimulated Brillouin scattering in the time domain at a 1 nm⁻¹ wave vector,
+      an equivalent TG period of 6 nm, the smallest pitch recorded to date {r('10.1103/PhysRevLett.132.033802')}, and tracked nanoscale heat
+      propagation through the thermoelastic response of a SiO₂ membrane {r('10.1063/5.0201769')}. The same platform gave nanoscale polarization
+      gratings {r('10.1038/s41467-024-54799-6')}, time-domain EUV diffuse-scattering spectroscopy of surface phonons {r('10.1103/dq8w-62bm')},
+      and the electron-lattice coupling and bilayer thermoelasticity of metal films {r('10.1103/j1rk-j6rt', '10.1063/5.0340562')}.
+    </p>
+
+    <h3>Achievement 2 · Pioneering hard X-ray transient gratings</h3>
+    <p>
+      I contributed to the first hard X-ray transient grating, an X-ray pump / optical probe proof of principle on bismuth germanate at
+      SwissFEL {r('10.1038/s41566-021-00797-9')}, supported by heterodyne-detected optical TG data {r('10.48550/arXiv.2309.02308')}, with
+      responsibility for preparation, execution and data analysis. I then wrote the experimental protocols for X-ray TG at FELs
+      {r('10.1088/1361-6455/ad717f')}, measured X-ray circular dichroism by cross-polarized X-ray TG {r('10.1088/1361-6455/ad6b62')}, and
+      contributed to the theory of soft X-ray gratings {r('10.1088/1361-6455/ad4fd0')}.
+    </p>
+    <p>
+      The all hard X-ray transient grating (X-ray pump / X-ray probe) was demonstrated at SACLA {r('10.1038/s42005-025-02178-y')}, where I
+      prepared and ran the experiment and analysed the data; this milestone was a pivot for the COST Action CA22148. Hard X-ray gratings have
+      since launched coherent spin waves {r('10.1103/zybx-dqfc')}. The technique is developed under a long-term proposal at the European XFEL,
+      where I am shift leader and lead data analyst at FXE and MID, and I coordinated campaigns at SACLA and LCLS.
+    </p>
+
+    <h3>Achievement 3 · Single-shot three-dimensional EUV imaging</h3>
+    <p>
+      I demonstrated stereoscopic three-dimensional coherent diffraction imaging with a single EUV FEL pulse, reaching sub-micrometre
+      resolution {r('10.1364/OPTICA.492730')}, as experimentalist and data analyst. Single-shot 3D imaging opens a route to nanostructures in
+      radiation-sensitive samples such as molecules, bacteria and viruses, without averaging over many identical copies.
+    </p>
+
+    <h3>Achievement 4 · Spin waves, phonons and EUV optics</h3>
+    <p>
+      In collaborative EUV TG campaigns I contributed to the excitation and detection of coherent nanoscale spin waves, supported by optical
+      Faraday-rotation data I took during a research stay in Keith Nelson's group at MIT {r('10.1126/sciadv.adp6015')}; to understanding how
+      echo interference controls phonon attenuation in nanophononic membranes {r('10.1038/s41467-024-45571-x')}; to a high-efficiency
+      programmable modulator for EUV light {r('10.1038/s41566-024-01389-z')}; and to element- and enantiomer-selective real-time
+      visualization of molecular motion {r('10.1038/s41467-023-36047-5')}.
+    </p>
+  </section>
+
+  <section>
+    <h2>Collaborations, leadership and service</h2>
+    <ul>{service.map((s) => <li>{s}</li>)}</ul>
+  </section>
+
+  <section class="pubs">
+    <h2>Publications</h2>
+    <p class="lead">{pubs.length} selected peer-reviewed articles and preprints; first-author works marked ★. Full list on ORCID.</p>
+    <ol>
+      {pubs.map((p) => (
+        <li>
+          <span set:html={bold(p.authors)} /> ({p.year}). {p.title}. <i>{p.venue}</i>.{p.status && ` ${p.status[0].toUpperCase()}${p.status.slice(1)}.`}
+          {' '}<a href={`https://doi.org/${p.doi}`}>doi:{p.doi}</a>{p.first && ' ★'}
+        </li>
+      ))}
+    </ol>
+  </section>
+</body>
+</html>
+
+<style is:global>
+  @import '@fontsource-variable/inter';
+  @page { size: A4; margin: 22mm 18mm 20mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font-family: 'Inter Variable', Arial, sans-serif; font-size: 9.6pt; line-height: 1.42; color: #1a1a1a; }
+  a { color: inherit; text-decoration: none; }
+  .top { margin-bottom: 14mm; }
+  h1 { font-size: 26pt; font-weight: 700; margin: 0 0 6mm; letter-spacing: -0.01em; }
+  .name { font-size: 15pt; font-weight: 650; }
+  .meta { color: #444; margin-top: 1.2mm; }
+  .meta a { color: #c8102e; }
+  section { margin-bottom: 9mm; }
+  h2 { font-size: 13pt; font-weight: 700; margin: 0 0 3.5mm; padding-bottom: 1.5mm; border-bottom: 1.2pt solid #c8102e; break-after: avoid; }
+  h3 { font-size: 10.2pt; font-weight: 650; margin: 5mm 0 1.5mm; break-after: avoid; }
+  p { margin: 0 0 2.4mm; text-align: justify; hyphens: auto; }
+  .lead { color: #444; text-align: left; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-weight: 650; font-size: 8.6pt; color: #666; padding: 0 3mm 1.6mm 0; border-bottom: 0.6pt solid #bbb; }
+  td { vertical-align: top; padding: 2.4mm 3mm 2.4mm 0; border-bottom: 0.6pt solid #e2e2e2; break-inside: avoid; }
+  td span { display: block; color: #555; font-size: 8.8pt; }
+  th:nth-child(1), td:nth-child(1) { width: 38%; }
+  th:nth-child(3), td:nth-child(3) { width: 22%; }
+  .fac th:nth-child(1), .fac td:nth-child(1) { width: 28%; }
+  .fac th:nth-child(2), .fac td:nth-child(2) { width: 15%; color: #555; }
+  .fac th:nth-child(3), .fac td:nth-child(3) { width: auto; }
+  tr { break-inside: avoid; }
+  ul { margin: 0; padding-left: 4.5mm; }
+  li { margin-bottom: 1.6mm; }
+  .pubs ol { margin: 0; padding-left: 6mm; }
+  .pubs li { margin-bottom: 2.2mm; font-size: 9pt; break-inside: avoid; }
+  .pubs li a { color: #c8102e; }
+  .pubs b { font-weight: 700; }
+  @media screen { body { max-width: 180mm; margin: 20mm auto; } }
+</style>
