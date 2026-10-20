@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * *' # daily, to pick up new photos in the Drive Background folder
 
 permissions:
   contents: read
@@ -26,6 +28,11 @@ jobs:
       - run: npm ci
       - name: Pick random Japan background photos
         run: node scripts/fetch-japan.mjs
+      - name: Sync home backgrounds from Google Drive
+        run: node scripts/fetch-backgrounds.mjs
+        env:
+          GDRIVE_API_KEY: ${{ secrets.GDRIVE_API_KEY }}
+          BG_FOLDER_ID: ${{ secrets.BG_FOLDER_ID }}
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
