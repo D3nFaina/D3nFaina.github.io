@@ -12,7 +12,7 @@ export const profile = {
     'I develop nonlinear X-ray spectroscopies that watch heat, sound and spin move through matter on the nanometre and femtosecond scale.',
   bio: [
     'I am a postdoctoral researcher in the group of Prof. Andrea Cannizzo at the University of Bern. My work centres on four-wave mixing with extreme-ultraviolet and X-ray free-electron lasers, in particular transient gratings: two pulses interfere inside a sample, write a nanoscale pattern of excitation, and a third pulse reads out how that pattern evolves.',
-    'Over the past seven years I have proposed, built and run experiments at FERMI, SwissFEL, the European XFEL, SACLA and LCLS, and I write and share the analysis code that turns those shots into physics.',
+    'Over more than ten years I have proposed, built and run experiments at FERMI, SwissFEL, the European XFEL, SACLA and LCLS, and I write and share the analysis code that turns those shots into physics.',
   ],
   email: 'danny.fainozzi@gmail.com',
   links: {
@@ -20,15 +20,16 @@ export const profile = {
     orcid: 'https://orcid.org/0000-0001-7380-8324',
     scholar: '', // e.g. 'https://scholar.google.com/citations?user=XXXX'
     linkedin: '',
+    cringedin: 'https://cringedin.link/', // shown as a crossed-out LinkedIn logo
   },
   cvPdf: '/cv.pdf', // put your CV at public/cv.pdf
 };
 
-export const stats = [
+export const stats: { value: string; label: string; note?: string }[] = [
   { value: '25+', label: 'journal articles' },
   { value: '5', label: 'X-ray FEL facilities' },
-  { value: '6 nm', label: 'smallest transient grating pitch' },
-  { value: '7 yrs', label: 'at large-scale facilities' },
+  { value: '6 nm', label: 'smallest transient grating pitch', note: '(this is a thing to be proud, right? right?)' },
+  { value: '10+ yrs', label: 'at large-scale facilities' },
 ];
 
 export const news = [

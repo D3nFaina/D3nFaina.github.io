@@ -1,20 +1,63 @@
 ---
 import Base from '../layouts/Base.astro';
-import { places } from '../data/life';
+import { geoNaturalEarth1, geoPath } from 'd3-geo';
+import { feature } from 'topojson-client';
+import world from 'world-atlas/countries-110m.json';
+import { places, countriesVisited } from '../data/life';
+
+// The map is drawn at build time into a plain SVG: no tiles, no API keys.
+const W = 960, H = 470;
+const countries = (feature(world as any, (world as any).objects.countries) as any).features
+  .filter((f: any) => f.properties.name !== 'Antarctica');
+const projection = geoNaturalEarth1().fitExtent([[4, 4], [W - 4, H - 4]], { type: 'FeatureCollection', features: countries } as any);
+const path = geoPath(projection);
+const visited = new Set(countriesVisited);
+const shapes = countries.map((f: any) => ({ d: path(f) ?? '', name: f.properties.name as string, on: visited.has(f.properties.name) }));
+const pins = places.map((p, i) => {
+  const [x, y] = projection([p.lng, p.lat]) ?? [0, 0];
+  return { ...p, x, y, i };
+});
+const unknown = countriesVisited.filter((c) => !shapes.some((s: any) => s.name === c));
+if (unknown.length) console.warn(`travels: not on the map: ${unknown.join(', ')}`);
+
 const kinds = { lived: 'Lived', science: 'Beamtimes & science', travel: 'Travel' } as const;
-const countries = new Set(places.filter((p) => p.kind !== 'travel').map((p) => p.country)).size;
 ---
 <Base title="Travels" description="Places I have lived, worked and travelled.">
   <header class="container page-head">
     <span class="eyebrow">Travels</span>
     <h1>Around the world, one beamtime at a time</h1>
-    <p>X-ray free-electron lasers are rare, so science has taken me to {countries} countries. Here is where I have lived, measured and wandered.</p>
+    <p>X-ray free-electron lasers are rare, so science keeps sending me places. Here is where I have lived, measured and wandered.</p>
   </header>
+
   <div class="container">
+    <div class="counts reveal">
+      <div class="count"><div class="n">{countriesVisited.length}</div><div class="t">countries visited</div></div>
+      <div class="count"><div class="n">{places.filter((p) => p.kind !== 'travel').length}</div><div class="t">cities lived in or measured at</div></div>
+      <div class="count"><div class="n">{places.length}</div><div class="t">places on the map</div></div>
+    </div>
+
     <div class="legend">
+      <span><i class="sw visited"></i>Visited</span>
       {Object.entries(kinds).map(([k, l]) => <span><i class={`dot ${k}`}></i>{l}</span>)}
     </div>
-    <div id="map" class="card" data-places={JSON.stringify(places)}></div>
+
+    <div class="map card">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`World map with ${countriesVisited.length} visited countries highlighted`}>
+        <g class="land">
+          {shapes.map((s: any) => <path d={s.d} class:list={{ on: s.on }}><title>{s.name}</title></path>)}
+        </g>
+        <g class="pins">
+          {pins.map((p) => (
+            <g class={`pin ${p.kind}`} data-i={p.i} transform={`translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`}>
+              <circle class="halo" r="11" />
+              <circle class="core" r="4.5" />
+              <title>{p.name}: {p.note}</title>
+            </g>
+          ))}
+        </g>
+      </svg>
+    </div>
+
     <div class="grid">
       {places.map((p, i) => (
         <article class="place card reveal" style={`transition-delay:${(i % 4) * 60}ms`} data-i={i}>
@@ -29,43 +72,51 @@ const countries = new Set(places.filter((p) => p.kind !== 'travel').map((p) => p
       ))}
     </div>
   </div>
+
   <script>
-    import L from 'leaflet';
-    import 'leaflet/dist/leaflet.css';
-    const el = document.getElementById('map')!;
-    const places: { name: string; note: string; lat: number; lng: number; kind: 'lived' | 'science' | 'travel' }[] = JSON.parse(el.dataset.places!);
-    const colors = { lived: '#7c5cff', science: '#06b6d4', travel: '#f59e0b' };
-    const map = L.map(el, { scrollWheelZoom: false, worldCopyJump: true }).setView([40, 40], 2);
-    const url = (t: string) => `https://{s}.basemaps.cartocdn.com/${t}_all/{z}/{x}/{y}{r}.png`;
-    let layer: L.TileLayer | undefined;
-    const setTiles = () => {
-      if (layer) map.removeLayer(layer);
-      const t = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
-      layer = L.tileLayer(url(t), { attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 18 }).addTo(map);
-    };
-    setTiles();
-    window.addEventListener('themechange', setTiles);
-    const markers = places.map((p) =>
-      L.circleMarker([p.lat, p.lng], { radius: 8, color: '#fff', weight: 2, fillColor: colors[p.kind], fillOpacity: 1 })
-        .addTo(map).bindPopup(`<strong>${p.name}</strong><br>${p.note}`)
-    );
-    map.fitBounds(L.featureGroup(markers).getBounds().pad(0.15));
-    document.querySelectorAll<HTMLElement>('.place').forEach((card) => card.addEventListener('click', () => {
-      const m = markers[Number(card.dataset.i)];
-      map.flyTo(m.getLatLng(), 6, { duration: 1.2 });
-      m.openPopup();
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }));
+    const pins = document.querySelectorAll<SVGGElement>('.pin');
+    const light = (i: string | undefined, on: boolean) =>
+      pins.forEach((p) => p.classList.toggle('hot', on && p.dataset.i === i));
+    document.querySelectorAll<HTMLElement>('.place').forEach((card) => {
+      card.addEventListener('mouseenter', () => light(card.dataset.i, true));
+      card.addEventListener('mouseleave', () => light(card.dataset.i, false));
+      card.addEventListener('click', () => {
+        light(card.dataset.i, true);
+        document.querySelector('.map')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    });
   </script>
 </Base>
+
 <style>
-  #map { height: min(520px, 62vh); overflow: hidden; z-index: 0; }
+  .counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+  .count { border-top: 1.5px solid var(--ink); padding-top: 14px; }
+  .n { font-family: var(--font-display); font-size: clamp(44px, 6vw, 72px); line-height: 1; }
+  .t { color: var(--ink-mute); font-size: 14.5px; margin-top: 6px; }
+  @media (max-width: 640px) { .counts { grid-template-columns: 1fr 1fr; } }
+
   .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 14px; font-size: 14.5px; color: var(--ink-soft); }
   .legend span, .k { display: inline-flex; align-items: center; gap: 8px; }
+  .sw { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
+  .sw.visited { background: color-mix(in srgb, var(--accent) 45%, var(--bg-soft)); }
   .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .dot.lived, .band.lived { background: var(--violet); }
   .dot.science, .band.science { background: var(--cyan); }
   .dot.travel, .band.travel { background: var(--amber); }
+
+  .map { padding: 12px; overflow: hidden; }
+  .map svg { display: block; width: 100%; height: auto; }
+  .land path { fill: color-mix(in srgb, var(--ink) 12%, var(--bg-elev)); stroke: var(--bg-elev); stroke-width: 0.6; transition: fill .2s; }
+  .land path.on { fill: color-mix(in srgb, var(--accent) 45%, var(--bg-soft)); }
+  .land path:hover { fill: color-mix(in srgb, var(--ink) 22%, var(--bg-elev)); }
+  .land path.on:hover { fill: color-mix(in srgb, var(--accent) 60%, var(--bg-soft)); }
+  .pin .core { stroke: var(--bg-elev); stroke-width: 1.5; }
+  .pin .halo { opacity: 0; transition: opacity .2s; }
+  .pin.lived .core, .pin.lived .halo { fill: var(--violet); }
+  .pin.science .core, .pin.science .halo { fill: var(--cyan); }
+  .pin.travel .core, .pin.travel .halo { fill: var(--amber); }
+  .pin.hot .halo, .pin:hover .halo { opacity: 0.35; }
+
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 28px; }
   .place { overflow: hidden; cursor: pointer; transition: transform .3s, border-color .3s; }
   .place:hover { transform: translateY(-3px); border-color: var(--accent); }
@@ -75,5 +126,4 @@ const countries = new Set(places.filter((p) => p.kind !== 'travel').map((p) => p
   h3 { font-size: 24px; margin-top: 10px; }
   .c { color: var(--ink-mute); font-size: 14px; }
   p { margin: 10px 0 0; color: var(--ink-soft); font-size: 15px; }
-  :global(.leaflet-container) { font-family: var(--font-sans); background: var(--bg-soft); }
 </style>

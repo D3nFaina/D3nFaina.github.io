@@ -27,6 +27,10 @@ export const interests = [
   { title: 'Food', emoji: '🍝', text: 'Italian by birth, so this one is not optional.' },
 ];
 
+// Countries you have visited, spelled as in the world map data (e.g. 'United States of America').
+// The Travels page counts them and shades them on the map.
+export const countriesVisited = ['Italy', 'Switzerland', 'Japan', 'Germany', 'United States of America'];
+
 // Places on the map. kind: 'lived' | 'science' | 'travel'.
 export const places: { name: string; country: string; lat: number; lng: number; kind: 'lived' | 'science' | 'travel'; note: string; year?: string }[] = [
   { name: 'Trieste', country: 'Italy', lat: 45.65, lng: 13.78, kind: 'lived', note: 'Studies, PhD and FERMI', year: '2012 – 2024' },
@@ -37,5 +41,4 @@ export const places: { name: string; country: string; lat: number; lng: number; 
   { name: 'Harima', country: 'Japan', lat: 34.95, lng: 134.43, kind: 'science', note: 'SACLA beamtimes' },
   { name: 'Cambridge, MA', country: 'USA', lat: 42.36, lng: -71.09, kind: 'science', note: 'Research stay at MIT with Keith Nelson' },
   { name: 'Menlo Park', country: 'USA', lat: 37.42, lng: -122.2, kind: 'science', note: 'LCLS at SLAC' },
-  { name: 'Your next trip', country: 'Somewhere', lat: 64.15, lng: -21.94, kind: 'travel', note: 'Replace with places you have travelled for fun' },
 ];
