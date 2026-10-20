@@ -1,6 +1,6 @@
 ---
 // Home-page landing: the site's sections as balls bouncing around Den's winged portrait
-// rising out of a "Dr D. Fainozzi" can (one composite image, public/home/den-can.*). Physics runs below.
+// rising out of a "Dr D. Fainozzi" can (Den's own image, public/home/den-can-wall.*). Physics runs below.
 import Icon from './Icon.astro';
 import { profile, stats } from '../data/profile';
 
@@ -17,14 +17,10 @@ const balls = [
 
 ---
 <section class="stage" aria-label="Home">
-  <div class="space" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-
-  <figure class="figure">
-    <picture>
-      <source srcset="/home/den-can.webp" type="image/webp" />
-      <img src="/home/den-can.png" width="1181" height="1147" alt={`${profile.title} in front of painted angel wings, rising out of a Dr D. Fainozzi soda can`} />
-    </picture>
-  </figure>
+  <picture class="photo">
+    <source srcset="/home/den-can-wall.webp" type="image/webp" />
+    <img src="/home/den-can-wall.jpg" width="3720" height="2720" alt={`${profile.title} in front of painted angel wings, rising out of a Dr D. Fainozzi soda can`} />
+  </picture>
 
   <nav class="balls" aria-label="Sections">
     {balls.map((b) => (
@@ -57,7 +53,6 @@ const balls = [
   type Ball = { el: HTMLElement; x: number; y: number; vx: number; vy: number; r: number; m: number; held: boolean };
 
   const stage = document.querySelector<HTMLElement>('.stage')!;
-  const figure = stage.querySelector<HTMLElement>('.figure')!;
   const caption = stage.querySelector<HTMLElement>('.caption')!;
   let BOT = 0; // keep clear of the caption on phones
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -69,12 +64,15 @@ const balls = [
 
   // The can as an obstacle: a rectangle in stage coordinates.
   let ob = { x0: 0, y0: 0, x1: 0, y1: 0 };
+  const IW = 1860, IH = 1360, PX = 0.48, PY = 1; // photo size (before upscaling) and object-position
+  const DEN = { x0: 720, x1: 1050, y0: 640, y1: 1360 }; // Den and the can, in photo pixels
   const measure = () => {
     const s = stage.getBoundingClientRect();
     W = s.width; H = s.height;
-    const f = figure.getBoundingClientRect();
-    // Den, the inner half of the wings and the can.
-    ob = { x0: f.left - s.left + f.width * 0.27, x1: f.left - s.left + f.width * 0.73, y0: f.top - s.top + f.height * 0.12, y1: f.top - s.top + f.height * 0.99 };
+    // Where Den and the can land on screen: the photo is object-fit: cover, positioned
+    // at PX/PY, so map their box from photo pixels to stage pixels.
+    const k = Math.max(W / IW, H / IH), ox = (W - IW * k) * PX, oy = (H - IH * k) * PY;
+    ob = { x0: ox + DEN.x0 * k, x1: ox + DEN.x1 * k, y0: oy + DEN.y0 * k, y1: oy + DEN.y1 * k };
     BOT = W < 760 ? caption.offsetHeight : 0;
     const base = Math.min(W, H) * (W < 640 ? 0.12 : 0.105);
     for (const b of balls) {
@@ -260,7 +258,7 @@ const balls = [
   .stage {
     position: relative; overflow: hidden; margin-top: -65px;
     height: 100svh; min-height: 600px; max-height: 1100px;
-    background: #26262b; color: #f3f4fb; isolation: isolate;
+    background: #1c2129; color: #f3f4fb; isolation: isolate;
     touch-action: pan-y;
   }
   :global(body.on-stage .site-header) { background: rgba(30, 30, 36, 0.5); border-bottom-color: rgba(255, 255, 255, 0.08); }
@@ -269,35 +267,8 @@ const balls = [
     :global(body.on-stage .site-header .nav a) { color: rgba(243, 244, 251, 0.82); }
     :global(body.on-stage .site-header .nav a:hover) { color: #fff; background: rgba(255, 255, 255, 0.08); }
   }
-  .space { position: absolute; inset: 0; z-index: -1; overflow: hidden; background: #26262b; }
-  /* Two oversized gradient layers in the wings' colours. Only transform and opacity animate,
-     so the browser moves them on the GPU without repainting (blur filters made it crawl). */
-  .space i { position: absolute; inset: -30%; will-change: transform, opacity; }
-  .space i:nth-child(1) { background:
-      radial-gradient(closest-side at 22% 26%, rgba(226, 54, 127, 0.8), transparent),
-      radial-gradient(closest-side at 80% 24%, rgba(61, 92, 224, 0.75), transparent),
-      radial-gradient(closest-side at 24% 80%, rgba(44, 196, 230, 0.6), transparent),
-      radial-gradient(closest-side at 78% 78%, rgba(143, 76, 230, 0.75), transparent);
-    animation: turn 60s linear infinite; }
-  .space i:nth-child(2) { background:
-      radial-gradient(closest-side at 26% 22%, rgba(255, 170, 60, 0.6), transparent),
-      radial-gradient(closest-side at 76% 30%, rgba(226, 54, 127, 0.7), transparent),
-      radial-gradient(closest-side at 22% 76%, rgba(120, 90, 240, 0.7), transparent),
-      radial-gradient(closest-side at 80% 80%, rgba(40, 170, 200, 0.7), transparent);
-    animation: turn 90s linear infinite reverse, swap 24s ease-in-out infinite alternate; }
-  .space i:nth-child(n + 3) { display: none; }
-  @keyframes turn { to { transform: rotate(360deg); } }
-  @keyframes swap { from { opacity: 0; } to { opacity: 1; } }
-
-  .figure {
-    position: absolute; left: 50%; top: 54%; margin: 0;
-    height: min(88%, 1000px); aspect-ratio: 1181 / 1147; max-width: 100%;
-    transform: translate(-50%, -50%);
-    animation: float 8s ease-in-out infinite;
-    pointer-events: none;
-  }
-  @keyframes float { 50% { transform: translate(-50%, calc(-50% - 10px)); } }
-  .figure img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .photo { position: absolute; inset: 0; z-index: -1; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; object-position: 48% 100%; display: block; }
 
   .balls { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
   .ball {
@@ -357,7 +328,8 @@ const balls = [
   .ball:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
   .ball.held { cursor: grabbing; scale: 1.1; }
 
-  .caption { position: absolute; left: 0; bottom: 0; z-index: 3; padding: 0 24px 22px; max-width: 640px; pointer-events: none; }
+  .caption { position: absolute; left: 0; bottom: 0; z-index: 3; padding: 40px 24px 22px; max-width: 640px; pointer-events: none;
+    background: radial-gradient(ellipse 90% 100% at 0% 100%, rgba(10, 12, 18, 0.7), transparent 75%); }
   .caption > * { pointer-events: auto; }
   .role { margin: 0; font-size: 12.5px; font-weight: 650; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(243, 244, 251, 0.85); }
   .aff { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 13.5px; color: rgba(243, 244, 251, 0.6); }
@@ -369,12 +341,11 @@ const balls = [
   @keyframes nudge { 50% { translate: -50% 6px; } }
 
   @media (max-width: 760px) {
-    .figure { height: auto; width: 100%; top: 50%; }
     .hint { display: none; }
     .down { display: none; }
     .caption { padding: 0 16px 16px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .figure, .space i, .down, .face, .face::after, .fringes, .bub { animation: none; }
+    .down, .face, .face::after, .fringes, .bub { animation: none; }
   }
 </style>
