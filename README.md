@@ -28,7 +28,7 @@ npm run build    # static site in dist/
 
 ## Deploy
 
-The hero background is a random featured photo of Japan from Wikimedia Commons, re-picked on every deploy by `scripts/fetch-japan.mjs` (credit shown in the corner).
+The home-page drawing (Ginkaku-ji and its sand garden) is an inline SVG in `src/components/GardenScene.astro`.
 
 Pushing to `main` runs `.github/workflows/deploy.yml`, which builds and publishes the site.
 One-time setup: repository **Settings → Pages → Source: GitHub Actions**.

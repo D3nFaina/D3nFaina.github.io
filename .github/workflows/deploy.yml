@@ -24,8 +24,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Pick random Japan background photos
-        run: node scripts/fetch-japan.mjs
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

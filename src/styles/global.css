@@ -1,5 +1,6 @@
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/fraunces';
+@import '@fontsource/caveat/600.css';
 
 :root {
   --bg: #f7f5f0;
@@ -18,6 +19,7 @@
   --maxw: 1120px;
   --font-sans: 'Inter Variable', system-ui, -apple-system, sans-serif;
   --font-display: 'Fraunces Variable', Georgia, serif;
+  --page-bg: var(--bg);
 
   --violet: #7c5cff;
   --cyan: #06b6d4;

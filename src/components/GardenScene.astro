@@ -1,0 +1,193 @@
+---
+// Hand-drawn style ink scene: Ginkaku-ji (the Silver Pavilion) with its sand garden,
+// white line work on the hero's gray. Shapes are filled with the background colour
+// so nearer objects hide the lines behind them, like an inked manga panel.
+
+const BG = '#3b3c42';
+
+// Raked sand: wavy parallel lines between two horizontal bounds.
+function rake(x0: number, x1: number, y0: number, y1: number, step: number, amp: number, period: number) {
+  const out: string[] = [];
+  for (let y = y0; y <= y1; y += step) {
+    let d = `M${x0},${y}`;
+    for (let x = x0; x <= x1; x += 10) {
+      d += ` L${x},${(y + amp * Math.sin((x / period) * Math.PI * 2 + y * 0.15)).toFixed(1)}`;
+    }
+    out.push(d);
+  }
+  return out;
+}
+
+// Spiral-tipped cloud, the classic manga swirl.
+function swirlCloud(cx: number, cy: number, w: number, flip = false) {
+  const s = flip ? -1 : 1;
+  const h = w * 0.22;
+  let d = `M${cx - (s * w) / 2},${cy}`;
+  const bumps = 4;
+  for (let i = 0; i < bumps; i++) {
+    const xa = cx - (s * w) / 2 + (s * w * i) / bumps;
+    const xb = xa + (s * w) / bumps;
+    d += ` Q${(xa + xb) / 2},${cy - h * (i % 2 ? 0.8 : 1.3)} ${xb},${cy}`;
+  }
+  // spiral at the end
+  let r = h * 0.9;
+  let a = 0;
+  const ex = cx + (s * w) / 2;
+  const sx = ex - s * r;
+  for (let i = 0; i < 22; i++) {
+    a += 0.42;
+    r *= 0.93;
+    d += ` L${(sx + s * r * Math.cos(a)).toFixed(1)},${(cy - r * Math.sin(a)).toFixed(1)}`;
+  }
+  return d;
+}
+
+const shoji = Array.from({ length: 15 }, (_, i) => 1012 + i * 24);
+const balusters = Array.from({ length: 13 }, (_, i) => 1066 + i * 19);
+const shingles1 = Array.from({ length: 22 }, (_, i) => 1035 + i * 14);
+const shingles2 = Array.from({ length: 9 }, (_, i) => 1138 + i * 11);
+const sand = rake(700, 1600, 712, 752, 7, 2.2, 70);
+---
+<svg class="garden" viewBox="600 60 1000 840" preserveAspectRatio="xMaxYMax meet" aria-hidden="true">
+  <defs>
+    <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.16" />
+      <stop offset="1" stop-color="#fff" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Moon and clouds -->
+    <circle cx="1020" cy="215" r="170" fill="url(#moonGlow)" stroke="none" />
+    <circle cx="1020" cy="215" r="92" stroke-width="2.4" opacity="0.9" />
+    <path d="M960 160 q20 -18 46 -16 M944 196 q8 -10 18 -12 M1060 270 q22 -8 30 -26" stroke-width="1.2" opacity="0.4" />
+    <path d={swirlCloud(905, 262, 230)} stroke-width="2.2" opacity="0.75" fill={BG} />
+    <path d={swirlCloud(1250, 150, 260, true)} stroke-width="2" opacity="0.55" />
+    <path d={swirlCloud(1460, 300, 180)} stroke-width="1.8" opacity="0.45" />
+
+    <!-- Higashiyama hills -->
+    <path d="M640 520 C760 430 860 410 960 448 C1040 476 1100 400 1210 380 C1320 362 1420 420 1600 404" stroke-width="1.6" opacity="0.4" fill={BG} />
+    <g stroke-width="1" opacity="0.22">
+      <path d="M740 470 l18 30 M790 450 l20 40 M840 438 l22 44 M1150 400 l20 44 M1230 386 l22 50 M1300 384 l24 50 M1380 398 l22 44 M1460 410 l18 34" />
+    </g>
+
+    <!-- Back pine, left of the pavilion -->
+    <g stroke-width="2" fill={BG}>
+      <path d="M905 612 C900 560 918 520 900 470 C890 440 912 420 905 392" fill="none" stroke-width="3" />
+      <path d="M830 470 q20 -26 52 -16 q22 -20 50 -6 q30 -6 40 18 q-10 18 -38 16 q-30 12 -58 2 q-34 8 -46 -14 Z" />
+      <path d="M860 410 q16 -22 44 -14 q24 -14 44 2 q20 4 18 20 q-22 12 -44 6 q-24 8 -46 -2 q-20 0 -16 -12 Z" />
+      <path d="M876 362 q14 -18 36 -10 q22 -8 30 10 q-12 14 -32 10 q-22 6 -34 -10 Z" />
+    </g>
+    <g stroke-width="1" opacity="0.6">
+      <path d="M846 466 l10 -6 M872 462 l10 -8 M900 458 l12 -8 M928 460 l10 -6 M880 410 l10 -6 M910 404 l10 -8 M934 410 l8 -6 M896 362 l8 -6 M918 360 l8 -6" />
+    </g>
+
+    <!-- Ginkaku-ji (Kannon-den) -->
+    <g stroke-width="2.6">
+      <!-- top roof with phoenix -->
+      <path d="M1180 318 L1180 290" stroke-width="2" />
+      <path d="M1180 292 q-6 -18 -24 -22 q12 14 10 22 q-14 -4 -22 4 q14 2 22 4 Z M1180 292 q10 -14 28 -16 q-6 12 -16 18 q12 6 30 2 q-14 10 -38 4 Z" stroke-width="1.6" fill={BG} />
+      <path d="M1040 392 Q1062 410 1092 406 L1268 406 Q1298 410 1320 392 L1232 340 L1180 320 L1128 340 Z" fill={BG} />
+      <path d="M1046 398 Q1064 416 1094 413 L1266 413 Q1296 416 1314 398" stroke-width="1.8" />
+      <path d="M1128 340 L1232 340" stroke-width="1.4" />
+      <g stroke-width="1" opacity="0.7">{shingles2.map((x) => <path d={`M${x},344 L${x + (x - 1180) * 0.55},402`} />)}</g>
+
+      <!-- upper floor -->
+      <rect x="1086" y="413" width="188" height="50" fill={BG} />
+      <path d="M1104 460 v-26 q0 -12 10 -16 q6 -6 10 -12 q4 6 10 12 q10 4 10 16 v26 Z" stroke-width="2" />
+      <path d="M1216 460 v-26 q0 -12 10 -16 q6 -6 10 -12 q4 6 10 12 q10 4 10 16 v26 Z" stroke-width="2" />
+      <path d="M1160 418 v42 M1180 418 v42 M1200 418 v42 M1160 438 h40" stroke-width="1.4" />
+      <path d="M1066 470 h228 M1066 463 h228" stroke-width="2" />
+      <g stroke-width="1.2">{balusters.map((x) => <path d={`M${x},463 v7`} />)}</g>
+
+      <!-- middle roof -->
+      <path d="M948 500 Q974 520 1010 517 L1350 517 Q1386 520 1412 500 L1326 470 L1034 470 Z" fill={BG} />
+      <path d="M956 507 Q984 528 1014 525 L1346 525 Q1376 528 1404 507" stroke-width="1.8" />
+      <g stroke-width="1" opacity="0.7">{shingles1.map((x) => <path d={`M${x},474 L${x + (x - 1180) * 0.16},514`} />)}</g>
+
+      <!-- lower floor -->
+      <rect x="1000" y="525" width="360" height="75" fill={BG} />
+      <g stroke-width="1.3">{shoji.map((x) => <path d={`M${x},532 V596`} />)}</g>
+      <path d="M1004 548 h352 M1004 576 h352" stroke-width="1" opacity="0.7" />
+      <path d="M1000 525 v75 M1360 525 v75 M1120 525 v75 M1240 525 v75" stroke-width="2.4" />
+      <!-- veranda and foundation -->
+      <path d="M976 600 h408 M976 610 h408" stroke-width="2.2" />
+      <path d="M990 610 v14 M1050 610 v14 M1120 610 v14 M1180 610 v14 M1240 610 v14 M1310 610 v14 M1370 610 v14" stroke-width="1.6" />
+      <path d="M1150 624 l-6 10 h72 l-6 -10" stroke-width="1.6" />
+    </g>
+
+    <!-- Front pine, right -->
+    <g stroke-width="2.4" fill={BG}>
+      <path d="M1515 690 C1505 640 1470 610 1488 560 C1500 528 1470 500 1440 492" fill="none" stroke-width="4" />
+      <path d="M1488 560 C1520 540 1550 548 1572 530" fill="none" stroke-width="3" />
+      <path d="M1380 500 q18 -26 52 -18 q26 -24 60 -10 q30 -2 38 22 q-12 20 -44 16 q-30 14 -62 2 q-36 6 -44 -12 Z" />
+      <path d="M1520 532 q16 -24 46 -16 q24 -14 46 4 q16 12 0 24 q-24 10 -46 2 q-26 8 -46 -14 Z" />
+    </g>
+    <g stroke-width="1" opacity="0.6">
+      <path d="M1400 498 l10 -8 M1428 492 l12 -8 M1460 488 l10 -8 M1490 492 l10 -8 M1540 530 l10 -8 M1568 524 l10 -8" />
+    </g>
+
+    <!-- Stone lantern -->
+    <g stroke-width="2.2" fill={BG}>
+      <path d="M842 690 h56 l-6 -10 h-44 Z" />
+      <path d="M860 680 v-44 h20 v44" />
+      <path d="M848 636 h44 v-8 h-44 Z" />
+      <path d="M852 628 v-24 h36 v24" />
+      <path d="M862 610 h16 v14 h-16 Z" stroke-width="1.4" />
+      <path d="M834 604 Q852 590 870 584 Q888 590 906 604 Z" />
+      <path d="M870 584 v-10 m-5 0 a5 5 0 1 0 10 0 a5 5 0 1 0 -10 0" stroke-width="1.6" />
+    </g>
+
+    <!-- Ginshadan: the raked sand terrace -->
+    <path d="M660 708 L1600 700 L1600 760 L620 764 Z" fill={BG} stroke-width="2.4" />
+    <path d="M620 764 L620 782 L1600 778" stroke-width="2" />
+    <g stroke-width="1.1" opacity="0.75">{sand.map((d) => <path d={d} />)}</g>
+
+    <!-- Kogetsudai: the moon-viewing sand cone -->
+    <g stroke-width="2.4" fill={BG}>
+      <path d="M1250 742 L1272 668 Q1316 652 1360 668 L1382 742 Q1316 762 1250 742 Z" />
+      <ellipse cx="1316" cy="668" rx="44" ry="9" />
+    </g>
+    <g stroke-width="1" opacity="0.7">
+      <ellipse cx="1316" cy="668" rx="30" ry="5.5" />
+      <ellipse cx="1316" cy="668" rx="16" ry="3" />
+      <path d="M1280 680 L1264 738 M1296 678 L1288 748 M1316 677 V752 M1336 678 L1344 748 M1352 680 L1368 738" />
+    </g>
+
+    <!-- Rocks -->
+    <g stroke-width="2.2" fill={BG}>
+      <path d="M700 812 q10 -40 52 -46 q44 -2 58 30 q6 22 -14 28 q-48 10 -96 -12 Z" />
+      <path d="M820 830 q8 -22 34 -24 q28 2 30 22 q-28 12 -64 2 Z" />
+      <path d="M1420 818 q16 -46 64 -50 q48 2 62 38 q2 20 -22 24 q-58 8 -104 -12 Z" />
+    </g>
+    <g stroke-width="1" opacity="0.6">
+      <path d="M716 806 l14 -20 M734 808 l16 -24 M752 810 l14 -20 M1440 812 l16 -24 M1462 814 l16 -26 M1486 816 l14 -22" />
+    </g>
+
+    <!-- Pond ripples -->
+    <g stroke-width="1.4" opacity="0.55">
+      <ellipse cx="1040" cy="842" rx="120" ry="14" />
+      <ellipse cx="1040" cy="842" rx="80" ry="9" />
+      <ellipse cx="1040" cy="842" rx="40" ry="4.5" />
+      <path d="M880 870 q40 -6 80 0 M1120 872 q50 -8 100 0" />
+    </g>
+
+    <!-- Falling leaves -->
+    <g stroke-width="1.6" opacity="0.8" class="leaves">
+      <path d="M760 320 q8 -8 16 0 q-8 8 -16 0 Z" />
+      <path d="M1360 250 q8 -8 16 0 q-8 8 -16 0 Z" />
+      <path d="M1540 420 q8 -8 16 0 q-8 8 -16 0 Z" />
+      <path d="M980 640 q8 -8 16 0 q-8 8 -16 0 Z" />
+    </g>
+  </g>
+</svg>
+
+<style>
+  .garden { position: absolute; right: 0; bottom: 0; width: min(68%, 1180px); height: 100%; pointer-events: none; }
+  @media (max-width: 860px) { .garden { width: 100%; height: 300px; opacity: 0.9; } }
+  .leaves path { animation: drift 9s ease-in-out infinite alternate; transform-box: fill-box; }
+  .leaves path:nth-child(2) { animation-delay: -3s; }
+  .leaves path:nth-child(3) { animation-delay: -6s; }
+  @keyframes drift { from { transform: translate(0, 0) rotate(0); } to { transform: translate(-18px, 26px) rotate(40deg); } }
+  @media (prefers-reduced-motion: reduce) { .leaves path { animation: none; } }
+</style>
