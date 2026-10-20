@@ -1,14 +1,15 @@
 ---
 import Base from '../layouts/Base.astro';
-import { geoNaturalEarth1, geoPath } from 'd3-geo';
+import { geoNaturalEarth1, geoPath, geoGraticule } from 'd3-geo';
 import { feature } from 'topojson-client';
 import world from 'world-atlas/countries-110m.json';
 import { places, countriesVisited } from '../data/life';
 import photos from '../data/photos.json';
 import { stars, byCountry, starCountries, frame, slug } from '../lib/stars';
 
-// The world map is drawn at build time into a plain SVG: no tiles, no API keys.
-// Zoomed country maps are drawn in the browser from /geo/<slug>.json, in the projection the visitor picks.
+// The world map is drawn at build time into a plain SVG (no tiles, no API keys), then redrawn in the
+// browser from /geo/world.json with pastel land cover and in whichever projection the visitor picks.
+// Zoomed country maps are drawn in the browser from /geo/<slug>.json.
 const W = 960, H = 470;
 const countries = (feature(world as any, (world as any).objects.countries) as any).features
   .filter((f: any) => f.properties.name !== 'Antarctica');
@@ -21,8 +22,10 @@ const visited = new Set(visitedList);
 
 const shapes = countries.map((f: any) => ({
   d: path(f) ?? '', name: f.properties.name as string,
-  on: visited.has(f.properties.name), zoom: byCountry.has(f.properties.name),
+  on: visited.has(f.properties.name), can: byCountry.has(f.properties.name),
 }));
+const sea = path({ type: 'Sphere' } as any) ?? '';
+const grat = path(geoGraticule().step([15, 15])()) ?? '';
 const pins = places.map((p, i) => {
   const [x, y] = projection([p.lng, p.lat]) ?? [0, 0];
   return { ...p, x, y, i };
@@ -34,13 +37,6 @@ const starPath = (r: number) => Array.from({ length: 10 }, (_, k) => {
   return `${k ? 'L' : 'M'}${(rr * Math.cos(t)).toFixed(2)} ${(rr * Math.sin(t)).toFixed(2)}`;
 }).join('') + 'Z';
 const topStars = stars.filter((st) => st.t).map((st) => ({ ...st, xy: (projection([st.o, st.a]) ?? [0, 0]).map((v) => +v.toFixed(1)) }));
-
-// Where to fly to on the world map before the zoomed map takes over.
-const flyTo = Object.fromEntries(starCountries.map((c) => {
-  const [x0, y0, x1, y1] = frame(c).box;
-  const [[a, b], [cc, d]] = path.bounds({ type: 'MultiPoint', coordinates: [[x0, y0], [x1, y1]] } as any);
-  return [c, [a, b, cc - a, d - b].map((v) => +v.toFixed(1))];
-}));
 
 type Pic = { f: string; w: number; h: number };
 const albums = places.filter((p) => p.album).map((p) => {
@@ -59,6 +55,7 @@ const photoCount = albums.reduce((n, a) => n + a.pics.length, 0);
 
 const kinds = { lived: 'Lived', science: 'Beamtimes & science', travel: 'Travel' } as const;
 const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
+const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(y)));
 ---
 <Base title="Travels" description="Places I have lived, worked and travelled.">
   <header class="container page-head">
@@ -75,21 +72,27 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
     </div>
 
     <div class="legend">
-      <span><i class="sw visited"></i>Visited</span>
+      <span><i class="sw visited"></i>Visited (in colour)</span><span><i class="sw faded"></i>Not yet</span>
       {Object.entries(kinds).map(([k, l]) => <span><i class={`dot ${k}`}></i>{l}</span>)}
       <span><svg class="sw-star" viewBox="-6 -6 12 12"><path d={starPath(5.5)} /></svg>Favourite spots</span>
     </div>
 
-    <div class="map card" data-fly={JSON.stringify(flyTo)} data-albums={JSON.stringify(albumsByCountry)}>
+    <div class="map card" data-albums={JSON.stringify(albumsByCountry)}
+      data-pins={JSON.stringify(pins.map((p) => [p.lng, p.lat]))} data-top={JSON.stringify(topStars.map((s) => [s.o, s.a]))}>
       <div class="map-bar">
         <button class="back" hidden>← World</button>
-        <span class="hint">Pick a country to see all my favourite spots there</span>
+        <span class="hint">Click a country (or pick one below) to see all my favourite spots there</span>
         <span class="here" hidden></span>
       </div>
       <div class="stage">
         <svg class="world" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`World map with ${visitedList.length} visited countries highlighted`}>
+          <defs><clipPath id="world-land"><path class="clip" d={shapes.map((s: any) => s.d).join('')} /></clipPath></defs>
+          <path class="sea" d={sea} />
+          <path class="grat" d={grat} />
+          <path class="landbase" d={shapes.map((s: any) => s.d).join('')} />
+          <g class="biomes" clip-path="url(#world-land)"></g>
           <g class="land">
-            {shapes.map((s: any) => <path d={s.d} class:list={{ on: s.on, zoom: s.zoom }} data-c={s.zoom ? s.name : undefined}><title>{s.name}</title></path>)}
+            {shapes.map((s: any) => <path d={s.d} class:list={{ on: s.on, can: s.can }} data-c={s.name}><title>{s.name}</title></path>)}
           </g>
           <g class="marks">
             <g class="pins">
@@ -108,15 +111,18 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
         </svg>
         <svg class="detail" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Favourite spots in the selected country"></svg>
         <div class="loading" hidden>Loading map…</div>
-        <div class="proj" hidden>
-          <div class="proj-buttons" role="radiogroup" aria-label="Map projection"></div>
+        <div class="proj">
+          <div class="proj-buttons" role="radiogroup" aria-label="World map projection"></div>
           <p class="proj-note"></p>
         </div>
         <div class="tip" hidden></div>
       </div>
+      <div class="biome-key" aria-hidden="true">
+        {[['desert', 'Desert'], ['dry', 'Steppe & savanna'], ['grass', 'Grassland & farmland'], ['forest', 'Forest'], ['jungle', 'Rainforest'], ['cold', 'Snow & tundra'], ['ice', 'Ice']].map(([k, l]) => <span><i style={`background: var(--${k})`}></i>{l}</span>)}
+      </div>
       <div class="strip" hidden></div>
       <div class="chips">
-        {starCountries.map((c) => <button class="chip" data-c={c} data-slug={slug(c)}>{label(c)}<span>{byCountry.get(c)!.length}</span></button>)}
+        {chipList.map((c) => <button class="chip" data-c={c} data-slug={slug(c)} data-box={JSON.stringify(frame(c).box)}>{label(c)}<span>{byCountry.get(c)!.length}</span></button>)}
       </div>
     </div>
 
@@ -146,7 +152,7 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
           <h3>{a.name} <span>{a.country} · {a.year} · {a.pics.length} photos</span></h3>
           <div class="masonry">
             {a.pics.map((ph) => (
-              <figure><button class="zoom" data-src={`/travels/full/${ph.f}.jpg`} data-caption={[ph.caption, `${a.name} ${a.year}`].filter(Boolean).join(' · ')}>
+              <figure><button class="photo" data-src={`/travels/full/${ph.f}.jpg`} data-caption={[ph.caption, `${a.name} ${a.year}`].filter(Boolean).join(' · ')}>
                 <img src={`/travels/thumb/${ph.f}.jpg`} alt={ph.caption || `${a.name}, ${a.year}`} width={ph.w} height={ph.h} loading="lazy" /></button>
                 {ph.caption && <figcaption>{ph.caption}</figcaption>}</figure>
             ))}
@@ -175,10 +181,10 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
     };
     const step = (d: number) => { at = (at + d + set.length) % set.length; show(); };
     document.addEventListener('click', (e) => {
-      const b = (e.target as HTMLElement).closest<HTMLElement>('.zoom');
+      const b = (e.target as HTMLElement).closest<HTMLElement>('.photo');
       if (!b) return;
       const group = b.closest('.masonry, .strip');
-      set = group ? [...group.querySelectorAll<HTMLElement>('.zoom')] : [b];
+      set = group ? [...group.querySelectorAll<HTMLElement>('.photo')] : [b];
       at = set.indexOf(b);
       show();
       box.showModal();
@@ -191,14 +197,17 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
 
   <script>
     import {
-      geoMercator, geoTransverseMercator, geoConicConformal, geoConicEqualArea, geoOrthographic,
-      geoPath, geoGraticule, type GeoProjection,
+      geoNaturalEarth1, geoMercator, geoEqualEarth, geoOrthographic, geoPath, geoGraticule, geoInterpolate,
+      type GeoProjection,
     } from 'd3-geo';
+    // @ts-ignore: no bundled types
+    import { geoWinkel3 } from 'd3-geo-projection';
 
     const W = 960, H = 470;
     const map = document.querySelector<HTMLElement>('.map')!;
     const worldSvg = map.querySelector<SVGSVGElement>('svg.world')!;
     const detailSvg = map.querySelector<SVGSVGElement>('svg.detail')!;
+    const stage = map.querySelector<HTMLElement>('.stage')!;
     const tip = map.querySelector<HTMLElement>('.tip')!;
     const back = map.querySelector<HTMLButtonElement>('.back')!;
     const hint = map.querySelector<HTMLElement>('.hint')!;
@@ -206,49 +215,50 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
     const loading = map.querySelector<HTMLElement>('.loading')!;
     const proj = map.querySelector<HTMLElement>('.proj')!;
     const strip = map.querySelector<HTMLElement>('.strip')!;
-    const chips = map.querySelectorAll<HTMLButtonElement>('.chip');
-    const flyTo: Record<string, number[]> = JSON.parse(map.dataset.fly!);
+    const chips = [...map.querySelectorAll<HTMLButtonElement>('.chip')];
     const albums: Record<string, { name: string; year?: string; pics: { f: string; caption: string }[] }[]> = JSON.parse(map.dataset.albums!);
+    const pinLL: [number, number][] = JSON.parse(map.dataset.pins!);
+    const topLL: [number, number][] = JSON.parse(map.dataset.top!);
+    const canZoom = new Set(chips.map((b) => b.dataset.c!));
     const full = [0, 0, W, H];
+    const BIOMES = ['desert', 'dry', 'grass', 'forest', 'jungle', 'cold', 'ice'];
 
+    type World = { countries: { n: string; t: string; c: any }[]; biomes: Record<string, number[][][][]> };
     type Geo = { c: string; box: number[]; span: number; land: { home: boolean; rings: number[][][] }[]; stars: [number, number, string][] };
 
-    // Five ways to flatten the same piece of globe.
-    const PROJECTIONS: { id: string; name: string; note: string; make: (g: Geo) => GeoProjection }[] = [
+    // Five ways to flatten the whole globe. The zoomed country maps always use Mercator: at that
+    // scale every projection looks the same.
+    let spin: [number, number, number] = [-15, -30, 0];
+    const PROJECTIONS: { id: string; name: string; note: string; make: () => GeoProjection }[] = [
+      {
+        id: 'natural', name: 'Natural Earth',
+        note: 'Drawn by eye to simply look right: no property is exactly true and none is badly off. A good everyday world map.',
+        make: () => geoNaturalEarth1(),
+      },
       {
         id: 'mercator', name: 'Mercator',
-        note: 'Keeps angles and local shapes true, which is why web maps use it. Areas swell towards the poles.',
+        note: 'Keeps angles and local shapes true, so a compass bearing is a straight line: made for sailors, used by web maps. Areas balloon towards the poles: Greenland looks as big as Africa, which is 14 times larger.',
         make: () => geoMercator(),
       },
       {
-        id: 'transverse', name: 'Transverse Mercator',
-        note: 'Mercator turned on its side and centred here. Almost no distortion along a north–south strip: great for long, tall countries like Japan, Italy or Vietnam.',
-        make: (g) => geoTransverseMercator().rotate([-mid(g)[0], -mid(g)[1]]),
+        id: 'equal', name: 'Equal Earth',
+        note: 'Every country gets its true share of area, with shapes kept pleasant. The fair choice for comparing how big places really are.',
+        make: () => geoEqualEarth(),
       },
       {
-        id: 'lambert', name: 'Lambert conic',
-        note: 'Wraps a cone around two latitudes. Shapes stay true across wide east–west regions in the mid-latitudes; aviation charts use it.',
-        make: (g) => geoConicConformal().rotate([-mid(g)[0], 0]).parallels(parallels(g)),
+        id: 'winkel', name: 'Winkel tripel',
+        note: 'Balances the errors in area, direction and distance, with the smallest overall distortion. National Geographic’s world map since 1998.',
+        make: () => geoWinkel3(),
       },
       {
-        id: 'albers', name: 'Albers equal-area',
-        note: 'A cone again, tuned so every square kilometre gets the same space. Best for comparing sizes; the classic for maps of the US.',
-        make: (g) => geoConicEqualArea().rotate([-mid(g)[0], 0]).parallels(parallels(g)),
-      },
-      {
-        id: 'ortho', name: 'Orthographic',
-        note: 'The Earth as seen from deep space: a true perspective of the globe, curving away at the edges. Beautiful, not for measuring.',
-        make: (g) => geoOrthographic().rotate([-mid(g)[0], -mid(g)[1]]),
+        id: 'ortho', name: 'Globe',
+        note: 'Orthographic: the Earth as seen from deep space, in true perspective. Only half the world at a time, so drag to spin it.',
+        make: () => geoOrthographic().rotate(spin),
       },
     ];
-    const mid = (g: Geo) => [(g.box[0] + g.box[2]) / 2, (g.box[1] + g.box[3]) / 2];
-    const parallels = (g: Geo): [number, number] => {
-      const [, y0, , y1] = g.box, d = Math.max((y1 - y0) / 6, 0.5);
-      return [y0 + d, y1 - d];
-    };
-
-    let projId = 'mercator';
-    try { projId = localStorage.getItem('travels-projection') || projId; } catch {}
+    let projId = 'natural';
+    try { projId = localStorage.getItem('travels-world-projection') || projId; } catch {}
+    if (!PROJECTIONS.some((p) => p.id === projId)) projId = 'natural';
 
     const ns = 'http://www.w3.org/2000/svg';
     const el = (name: string, attrs: Record<string, string> = {}) => {
@@ -260,62 +270,147 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
       const rr = k % 2 ? r * 0.45 : r, t = (Math.PI / 5) * k - Math.PI / 2;
       return `${k ? 'L' : 'M'}${(rr * Math.cos(t)).toFixed(2)} ${(rr * Math.sin(t)).toFixed(2)}`;
     }).join('') + 'Z';
+    const geom = (t: string, c: any) => ({ type: t, coordinates: c }) as any;
 
-    // Projection picker.
+    // World data (country outlines and land cover), fetched once.
+    const worldData: Promise<World> = fetch('/geo/world.json').then((r) => r.json());
+
+    // ---- world map ----
+    let wp: GeoProjection = geoNaturalEarth1();
+    let wpath = geoPath(wp);
+    const wSea = worldSvg.querySelector('.sea')!, wGrat = worldSvg.querySelector('.grat')!;
+    const wBase = worldSvg.querySelector('.landbase')!, wClip = worldSvg.querySelector('.clip')!;
+    const wBiomes = worldSvg.querySelector('.biomes')!;
+    const countryEls = new Map([...worldSvg.querySelectorAll<SVGPathElement>('.land path')].map((p) => [p.dataset.c!, p]));
+    const pinEls = [...worldSvg.querySelectorAll<SVGGElement>('.pin')];
+    const starEls = [...worldSvg.querySelectorAll<SVGPathElement>('.stars .star')];
+    const biomeEls = new Map<string, SVGPathElement>();
+    let W0: World | null = null;
+
+    function setWorldProjection() {
+      const p = PROJECTIONS.find((q) => q.id === projId)!.make();
+      if (projId === 'ortho') p.fitExtent([[4, 4], [W - 4, H - 4]], { type: 'Sphere' } as any);
+      else p.fitExtent([[4, 4], [W - 4, H - 4]], { type: 'FeatureCollection', features: W0!.countries.map((c) => ({ type: 'Feature', geometry: geom(c.t, c.c) })) } as any);
+      p.clipExtent([[0, 0], [W, H]]);
+      wp = p; wpath = geoPath(p);
+    }
+    function drawWorld() {
+      if (!W0) return;
+      wSea.setAttribute('d', wpath({ type: 'Sphere' } as any) ?? '');
+      wGrat.setAttribute('d', wpath(geoGraticule().step([15, 15])()) ?? '');
+      let all = '';
+      for (const c of W0.countries) {
+        const d = wpath(geom(c.t, c.c)) ?? '';
+        all += d;
+        const e = countryEls.get(c.n);
+        if (e) e.setAttribute('d', d);
+      }
+      wBase.setAttribute('d', all); wClip.setAttribute('d', all);
+      for (const b of BIOMES) {
+        let e = biomeEls.get(b);
+        if (!e) { e = el('path', { class: b }) as SVGPathElement; biomeEls.set(b, e); wBiomes.append(e); }
+        e.setAttribute('d', wpath(geom('MultiPolygon', W0.biomes[b])) ?? '');
+      }
+      const place = (e: SVGElement, ll: [number, number]) => {
+        const xy = wp(ll), seen = xy && wpath({ type: 'Point', coordinates: ll } as any);
+        e.style.display = seen ? '' : 'none';
+        if (seen) e.setAttribute('transform', `translate(${xy![0].toFixed(1)} ${xy![1].toFixed(1)})`);
+      };
+      pinEls.forEach((e, i) => place(e, pinLL[i]));
+      starEls.forEach((e, i) => place(e, topLL[i]));
+    }
+    worldData.then((w) => { W0 = w; setWorldProjection(); drawWorld(); worldSvg.classList.add('ready'); });
+
+    // Projection picker (world view only).
     const buttons = proj.querySelector<HTMLElement>('.proj-buttons')!;
     const note = proj.querySelector<HTMLElement>('.proj-note')!;
     for (const p of PROJECTIONS) {
       const b = document.createElement('button');
       b.type = 'button'; b.textContent = p.name; b.dataset.id = p.id; b.setAttribute('role', 'radio');
-      b.addEventListener('click', () => {
+      b.addEventListener('click', async () => {
         projId = p.id;
-        try { localStorage.setItem('travels-projection', p.id); } catch {}
+        try { localStorage.setItem('travels-world-projection', p.id); } catch {}
         syncPicker();
-        if (geo) draw(geo, true);
+        await worldData;
+        worldSvg.classList.add('swap');
+        setTimeout(() => { setWorldProjection(); drawWorld(); worldSvg.classList.remove('swap'); }, 150);
       });
       buttons.append(b);
     }
     function syncPicker() {
-      const p = PROJECTIONS.find((q) => q.id === projId) ?? PROJECTIONS[0];
-      projId = p.id;
+      const p = PROJECTIONS.find((q) => q.id === projId)!;
       buttons.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.id === p.id)));
       note.textContent = p.note;
+      worldSvg.classList.toggle('globe', p.id === 'ortho');
     }
     syncPicker();
 
-    // Draw a country in the current projection.
-    let geo: Geo | null = null;
-    function draw(g: Geo, fade = false) {
-      const p = PROJECTIONS.find((q) => q.id === projId)!.make(g);
-      const [x0, y0, x1, y1] = g.box, xm = (x0 + x1) / 2, ym = (y0 + y1) / 2;
-      const outline = { type: 'MultiPoint', coordinates: [[x0, y0], [xm, y0], [x1, y0], [x1, ym], [x1, y1], [xm, y1], [x0, y1], [x0, ym]] };
-      // leave room at the top for the picker that floats over the map on hover screens
-      const top = getComputedStyle(proj).position === 'absolute' ? 96 : 30;
-      p.fitExtent([[30, top], [W - 30, H - 30]], outline as any);
+    // Drag to spin the globe.
+    let drag: { x: number; y: number; r: [number, number, number]; moved: boolean } | null = null;
+    worldSvg.addEventListener('pointerdown', (e) => {
+      if (projId !== 'ortho' || current) return;
+      drag = { x: e.clientX, y: e.clientY, r: [...spin] as [number, number, number], moved: false };
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const k = 180 / worldSvg.getBoundingClientRect().height;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+      if (!drag.moved) return;
+      spin = [drag.r[0] + dx * k, Math.max(-80, Math.min(80, drag.r[1] - dy * k)), 0];
+      wp.rotate(spin); hideTip();
+      requestAnimationFrame(drawWorld);
+    });
+    window.addEventListener('pointerup', () => {
+      if (drag?.moved) { const stop = (ev: Event) => { ev.stopPropagation(); }; worldSvg.addEventListener('click', stop, { capture: true, once: true }); }
+      drag = null;
+    });
+
+    // Spin the globe to face a place.
+    const turnTo = (lon: number, lat: number, ms = 700) => new Promise<void>((done) => {
+      const i = geoInterpolate([-spin[0], -spin[1]], [lon, lat]), t0 = performance.now();
+      const tick = (t: number) => {
+        const k = Math.min(1, (t - t0) / ms), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        const [x, y] = i(e);
+        spin = [-x, -y, 0]; wp.rotate(spin); drawWorld();
+        k < 1 ? requestAnimationFrame(tick) : done();
+      };
+      requestAnimationFrame(tick);
+    });
+
+    // ---- zoomed country ----
+    function draw(g: Geo, w: World) {
+      const p = geoMercator();
+      const [x0, y0, x1, y1] = g.box;
+      p.fitExtent([[30, 30], [W - 30, H - 30]], { type: 'MultiPoint', coordinates: [[x0, y0], [x1, y1]] } as any);
       p.clipExtent([[0, 0], [W, H]]);
       const path = geoPath(p);
       const step = g.span > 25 ? 10 : g.span > 6 ? 5 : g.span > 2 ? 2 : 1;
-      const render = () => {
-        detailSvg.replaceChildren();
-        detailSvg.append(el('path', { class: 'sea', d: path({ type: 'Sphere' } as any) ?? '' }));
-        detailSvg.append(el('path', { class: 'grat', d: path(geoGraticule().step([step, step])()) ?? '' }));
-        const land = el('g', { class: 'dland' });
-        for (const l of g.land) land.append(el('path', { d: path({ type: 'Polygon', coordinates: l.rings } as any) ?? '', ...(l.home ? { class: 'home' } : {}) }));
-        detailSvg.append(land);
-        const st = el('g');
-        for (const [o, a, n] of g.stars) {
-          const xy = p([o, a]);
-          if (!xy || !path({ type: 'Point', coordinates: [o, a] } as any)) continue; // behind the globe
-          const s = el('path', { class: 'star', d: starD(7), transform: `translate(${xy[0].toFixed(1)} ${xy[1].toFixed(1)})` });
-          s.dataset.n = n;
-          st.append(s);
-        }
-        detailSvg.append(st);
-        bindStars(detailSvg);
-      };
-      if (!fade) return render();
-      detailSvg.classList.add('swap');
-      setTimeout(() => { render(); detailSvg.classList.remove('swap'); }, 160);
+      detailSvg.replaceChildren();
+      const lands = g.land.map((l) => ({ home: l.home, d: path({ type: 'Polygon', coordinates: l.rings } as any) ?? '' }));
+      const all = lands.map((l) => l.d).join('');
+      const defs = el('defs'), clip = el('clipPath', { id: 'detail-land' });
+      clip.append(el('path', { d: all })); defs.append(clip);
+      detailSvg.append(defs);
+      detailSvg.append(el('rect', { class: 'sea', width: String(W), height: String(H) }));
+      detailSvg.append(el('path', { class: 'grat', d: path(geoGraticule().step([step, step])()) ?? '' }));
+      detailSvg.append(el('path', { class: 'landbase', d: all }));
+      const bio = el('g', { class: 'biomes', 'clip-path': 'url(#detail-land)' });
+      for (const b of BIOMES) bio.append(el('path', { class: b, d: path(geom('MultiPolygon', w.biomes[b])) ?? '' }));
+      detailSvg.append(bio);
+      const land = el('g', { class: 'land' });
+      for (const l of lands) land.append(el('path', { d: l.d, class: l.home ? 'on' : '' }));
+      detailSvg.append(land);
+      const st = el('g');
+      for (const [o, a, n] of g.stars) {
+        const xy = p([o, a]);
+        if (!xy) continue;
+        const s = el('path', { class: 'star', d: starD(7), transform: `translate(${xy[0].toFixed(1)} ${xy[1].toFixed(1)})` });
+        s.dataset.n = n;
+        st.append(s);
+      }
+      detailSvg.append(st);
+      bindStars(detailSvg);
     }
 
     // Fly the world map's viewBox from one box to another.
@@ -328,16 +423,21 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
       };
       requestAnimationFrame(tick);
     });
-    const fit = (b: number[]) => { // grow the box to the map's aspect ratio
-      const [x, y, w, h] = b, r = W / H;
-      const ww = Math.max(w, h * r), hh = ww / r;
+    // The world-map box (in the current projection) that a country's frame covers, at the map's aspect ratio.
+    const flyBox = (box: number[]) => {
+      const [x0, y0, x1, y1] = box;
+      const pts = [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [(x0 + x1) / 2, (y0 + y1) / 2]].map((q) => wp(q as [number, number])).filter(Boolean) as [number, number][];
+      if (pts.length < 5) return null;
+      const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+      const x = Math.min(...xs), y = Math.min(...ys), w = Math.max(...xs) - x, h = Math.max(...ys) - y, r = W / H;
+      const ww = Math.max(w, h * r, 8), hh = ww / r;
       return [x + w / 2 - ww / 2, y + h / 2 - hh / 2, ww, hh];
     };
 
     const cache = new Map<string, Promise<Geo>>();
+    const chipOf = (c: string) => chips.find((b) => b.dataset.c === c)!;
     const load = (c: string) => {
-      const s = map.querySelector<HTMLElement>(`.chip[data-c="${CSS.escape(c)}"]`)!.dataset.slug!;
-      if (!cache.has(c)) cache.set(c, fetch(`/geo/${s}.json`).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }));
+      if (!cache.has(c)) cache.set(c, fetch(`/geo/${chipOf(c).dataset.slug}.json`).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }));
       return cache.get(c)!;
     };
     chips.forEach((b) => b.addEventListener('pointerenter', () => load(b.dataset.c!).catch(() => {}), { once: true }));
@@ -351,32 +451,34 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
       hideTip();
       const data = load(c);
       if (first) {
-        worldSvg.classList.add('flying');
-        await fly(full, fit(flyTo[c]));
+        proj.hidden = true;
+        const box: number[] = JSON.parse(chipOf(c).dataset.box!);
+        await worldData;
+        if (projId === 'ortho') await turnTo((box[0] + box[2]) / 2, (box[1] + box[3]) / 2);
+        const to = flyBox(box);
+        if (to && current === c) { worldSvg.classList.add('flying'); await fly(full, to); }
       }
       loading.hidden = false;
-      let g: Geo;
-      try { g = await data; } catch {
+      let g: Geo, w: World;
+      try { [g, w] = await Promise.all([data, worldData]); } catch {
         loading.textContent = 'Could not load this map. Try again.';
         current = null;
         return;
       } finally { if (current === c) loading.hidden = true; }
       if (current !== c) return;
-      geo = g;
-      draw(g);
+      draw(g, w);
       worldSvg.classList.add('gone');
       detailSvg.classList.add('show');
-      proj.hidden = false;
       back.hidden = false; hint.hidden = true; here.hidden = false;
       here.textContent = `${c === 'United States of America' ? 'USA' : c} · ${g.stars.length} favourite spots`;
       fillStrip(c);
     }
     function close() {
       if (!current) return;
-      current = null; geo = null;
+      current = null;
       detailSvg.classList.remove('show');
       worldSvg.classList.remove('gone');
-      proj.hidden = true; strip.hidden = true;
+      proj.hidden = false; strip.hidden = true;
       chips.forEach((b) => b.classList.remove('on'));
       back.hidden = true; hint.hidden = false; here.hidden = true;
       hideTip();
@@ -392,7 +494,7 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
       for (const a of list) {
         for (const ph of a.pics) {
           const b = document.createElement('button');
-          b.className = 'zoom';
+          b.className = 'photo';
           b.dataset.src = `/travels/full/${ph.f}.jpg`;
           b.dataset.caption = [ph.caption, `${a.name} ${a.year ?? ''}`.trim()].filter(Boolean).join(' · ');
           const img = document.createElement('img');
@@ -405,11 +507,14 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
 
     back.addEventListener('click', close);
     chips.forEach((b) => b.addEventListener('click', () => (b.dataset.c === current ? close() : open(b.dataset.c!))));
-    worldSvg.querySelectorAll<SVGPathElement>('.land path.zoom').forEach((p) => p.addEventListener('click', () => open(p.dataset.c!)));
+    countryEls.forEach((p, c) => {
+      if (!canZoom.has(c)) return;
+      p.addEventListener('pointerenter', () => load(c).catch(() => {}), { once: true });
+      p.addEventListener('click', () => open(c));
+    });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && current && !document.querySelector('dialog[open]')) close(); });
 
     // Name tooltip on stars.
-    const stage = map.querySelector<HTMLElement>('.stage')!;
     const showTip = (s: Element) => {
       const r = s.getBoundingClientRect(), m = stage.getBoundingClientRect();
       tip.textContent = (s as HTMLElement).dataset.n!;
@@ -453,7 +558,11 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
   .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 14px; font-size: 14.5px; color: var(--ink-soft); }
   .legend span, .k { display: inline-flex; align-items: center; gap: 8px; }
   .sw { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
-  .sw.visited { background: color-mix(in srgb, var(--accent) 45%, var(--bg-soft)); }
+  .sw.visited { background: linear-gradient(90deg, #b8daa4 50%, #f3e0bb 50%); box-shadow: inset 0 0 0 1px rgba(60, 60, 50, 0.35); }
+  .sw.faded { background: color-mix(in srgb, #d4e7b2 40%, #faf9f5); box-shadow: inset 0 0 0 1px var(--line); }
+  .biome-key { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 10px 4px 0; font-size: 12.5px; color: var(--ink-mute); }
+  .biome-key span { display: inline-flex; align-items: center; gap: 6px; }
+  .biome-key i { width: 11px; height: 11px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--line); }
   .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .dot.lived, .band.lived { background: var(--violet); }
   .dot.science, .band.science { background: var(--cyan); }
@@ -467,17 +576,41 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
   .stage { position: relative; }
   .map svg { display: block; width: 100%; height: auto; }
 
+  /* pastel map palette */
+  .map {
+    --sea: #d4e6f3; --grat: rgba(70, 110, 150, 0.14); --landbase: #e3e6c6; --veil: rgba(250, 249, 245, 0.62);
+    --border: rgba(255, 255, 255, 0.9); --border-on: rgba(60, 60, 50, 0.45);
+    --desert: #f3e0bb; --dry: #ebe4b8; --grass: #d4e7b2; --forest: #b8daa4; --jungle: #9fcd98; --cold: #dbe6e5; --ice: #f8fafc;
+  }
+  :global([data-theme='dark']) .map {
+    --sea: #1d2c3b; --grat: rgba(150, 190, 230, 0.10); --landbase: #4a5240; --veil: rgba(22, 22, 26, 0.55);
+    --border: rgba(20, 20, 24, 0.9); --border-on: rgba(235, 235, 220, 0.5);
+    --desert: #7a6a50; --dry: #6c6a4a; --grass: #56704a; --forest: #47694a; --jungle: #3b6142; --cold: #5a6669; --ice: #7d848d;
+  }
+  .map :global(.sea) { fill: var(--sea); }
+  .map :global(.grat) { fill: none; stroke: var(--grat); stroke-width: 0.6; vector-effect: non-scaling-stroke; }
+  .map :global(.landbase) { fill: var(--landbase); }
+  .map :global(.biomes .desert) { fill: var(--desert); }
+  .map :global(.biomes .dry) { fill: var(--dry); }
+  .map :global(.biomes .grass) { fill: var(--grass); }
+  .map :global(.biomes .forest) { fill: var(--forest); }
+  .map :global(.biomes .jungle) { fill: var(--jungle); }
+  .map :global(.biomes .cold) { fill: var(--cold); }
+  .map :global(.biomes .ice) { fill: var(--ice); }
+  /* countries: visited ones show their colours, the rest sit under a light veil */
+  .map :global(.land path) { fill: var(--veil); stroke: var(--border); stroke-width: 0.6; vector-effect: non-scaling-stroke; transition: fill .2s; }
+  .map :global(.land path.on) { fill: transparent; stroke: var(--border-on); stroke-width: 0.9; }
+  .world .land path.can { cursor: pointer; }
+  .world .land path:hover { fill: color-mix(in srgb, var(--veil) 50%, transparent); }
+  .world .land path.on:hover { fill: rgba(255, 255, 255, 0.18); stroke-width: 1.6; }
+
   /* world */
-  .world { transition: opacity .25s; }
+  .world { transition: opacity .25s; touch-action: pan-y; }
+  .world.globe { cursor: grab; }
+  .world.swap { opacity: 0.2; transition: opacity .15s; }
   .world.gone { opacity: 0; pointer-events: none; }
-  .world .land path { vector-effect: non-scaling-stroke; }
   .world .marks { transition: opacity .2s; }
   .world.flying .marks { opacity: 0; }
-  .land path { fill: color-mix(in srgb, var(--ink) 12%, var(--bg-elev)); stroke: var(--bg-elev); stroke-width: 0.6; transition: fill .2s; }
-  .land path.on { fill: color-mix(in srgb, var(--accent) 45%, var(--bg-soft)); }
-  .land path:hover { fill: color-mix(in srgb, var(--ink) 22%, var(--bg-elev)); }
-  .land path.on:hover { fill: color-mix(in srgb, var(--accent) 60%, var(--bg-soft)); }
-  .land path.zoom { cursor: pointer; }
   .pin .core { stroke: var(--bg-elev); stroke-width: 1.5; }
   .pin .halo { opacity: 0; transition: opacity .2s; }
   .pin.lived .core, .pin.lived .halo { fill: var(--violet); }
@@ -488,16 +621,11 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
   /* zoomed country, drawn in the browser */
   .detail { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .35s; }
   .detail.show { opacity: 1; pointer-events: auto; }
-  .detail.swap { opacity: 0.15; transition: opacity .15s; }
-  .detail :global(.sea) { fill: color-mix(in srgb, var(--accent) 6%, var(--bg-elev)); stroke: var(--line); }
-  .detail :global(.grat) { fill: none; stroke: color-mix(in srgb, var(--ink) 10%, transparent); stroke-width: 0.6; }
-  .detail :global(.dland path) { fill: color-mix(in srgb, var(--ink) 11%, var(--bg-elev)); stroke: var(--bg-elev); stroke-width: 0.8; }
-  .detail :global(.dland path.home) { fill: color-mix(in srgb, var(--accent) 32%, var(--bg-soft)); }
   .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-mute); font-size: 14px; pointer-events: none; }
   .loading[hidden] { display: none; }
 
-  /* projection picker: shows on hover (always on touch screens) */
-  .proj { position: absolute; left: 10px; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; opacity: 0; transform: translateY(-6px); transition: opacity .2s, transform .2s; pointer-events: none; }
+  /* projection picker for the world map: shows on hover (always on touch screens) */
+  .proj { position: absolute; left: 10px; bottom: 10px; max-width: min(560px, calc(100% - 20px)); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; opacity: 0; transform: translateY(6px); transition: opacity .2s, transform .2s; pointer-events: none; }
   .stage:hover .proj, .proj:focus-within { opacity: 1; transform: none; pointer-events: auto; }
   @media (hover: none), (max-width: 640px) { .proj { opacity: 1; transform: none; pointer-events: auto; position: static; margin-top: 10px; } }
   .proj[hidden] { display: none; }
@@ -505,7 +633,7 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
   .proj-buttons :global(button) { font: inherit; font-size: 12.5px; font-weight: 550; color: var(--ink-soft); background: transparent; border: 0; border-radius: 8px; padding: 5px 9px; cursor: pointer; }
   .proj-buttons :global(button:hover) { color: var(--ink); background: var(--bg-soft); }
   .proj-buttons :global(button[aria-checked='true']) { background: var(--ink); color: var(--bg); }
-  .proj-note { margin: 0; max-width: 560px; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); padding: 6px 10px; border-radius: 10px; background: color-mix(in srgb, var(--bg-elev) 88%, transparent); border: 1px solid var(--line); backdrop-filter: blur(8px); }
+  .proj-note { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); padding: 6px 10px; border-radius: 10px; background: color-mix(in srgb, var(--bg-elev) 88%, transparent); border: 1px solid var(--line); backdrop-filter: blur(8px); }
 
   .star { fill: #f6b400; stroke: color-mix(in srgb, #7a5300 55%, transparent); stroke-width: 0.6; cursor: pointer; }
   .detail :global(.star) { fill: #f6b400; stroke: color-mix(in srgb, #7a5300 55%, transparent); stroke-width: 0.6; cursor: pointer; }
@@ -516,8 +644,8 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
 
   .strip { display: flex; gap: 8px; overflow-x: auto; padding: 12px 4px 2px; scrollbar-width: thin; }
   .strip[hidden] { display: none; }
-  .strip :global(.zoom) { flex: none; width: auto; border-radius: 10px; }
-  .strip :global(.zoom img) { height: 92px; width: auto; }
+  .strip :global(.photo) { flex: none; width: auto; border-radius: 10px; }
+  .strip :global(.photo img) { height: 92px; width: auto; }
 
   .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 4px 4px; }
   .chip { font: inherit; font-size: 13.5px; color: var(--ink-soft); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; transition: border-color .2s, background .2s; }
@@ -545,9 +673,9 @@ const label = (c: string) => (c === 'United States of America' ? 'USA' : c);
   .album h3 span { font-family: var(--font-sans, inherit); font-size: 14px; color: var(--ink-mute); font-weight: 500; margin-left: 8px; }
   .masonry { columns: 4 220px; column-gap: 12px; }
   .masonry figure { break-inside: avoid; margin: 0 0 12px; }
-  .zoom { display: block; padding: 0; border: 0; background: none; cursor: zoom-in; width: 100%; border-radius: 12px; overflow: hidden; }
-  .zoom img { display: block; width: 100%; height: auto; transition: transform .5s ease; }
-  .zoom:hover img { transform: scale(1.03); }
+  .photo { display: block; padding: 0; border: 0; background: none; cursor: zoom-in; width: 100%; border-radius: 12px; overflow: hidden; }
+  .photo img { display: block; width: 100%; height: auto; transition: transform .5s ease; }
+  .photo:hover img { transform: scale(1.03); }
   figcaption { font-size: 13.5px; color: var(--ink-mute); margin-top: 6px; }
   .lightbox { border: 0; padding: 0; background: transparent; max-width: min(1400px, 94vw); max-height: 94vh; overflow: visible; }
   .lightbox::backdrop { background: rgba(10, 10, 14, 0.9); }
