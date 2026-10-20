@@ -1,4 +1,202 @@
 [
-  { "src": "/bg/lake-bled.jpg", "drive": "20260718_163159.jpg", "title": "Lake Bled, Slovenia", "artist": "Danny Fainozzi", "license": "", "page": "" },
-  { "src": "/bg/snow.jpg", "drive": "20260327_070258.jpg", "title": "Snowy morning", "artist": "Danny Fainozzi", "license": "", "page": "" }
+  {
+    "src": "/bg/snow.jpg",
+    "drive": "20260327_070258.jpg",
+    "title": "Snowy morning",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260414_200118.jpg",
+    "drive": "20260414_200118.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260425_121149.jpg",
+    "drive": "20260425_121149.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260429_095052.jpg",
+    "drive": "20260429_095052.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260430_100823.jpg",
+    "drive": "20260430_100823.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260503_180415.jpg",
+    "drive": "20260503_180415.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260504_180751.jpg",
+    "drive": "20260504_180751.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260504_182726.jpg",
+    "drive": "20260504_182726.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260507_175223.jpg",
+    "drive": "20260507_175223.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260507_181838.jpg",
+    "drive": "20260507_181838.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260510_170646.jpg",
+    "drive": "20260510_170646.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260510_172711.jpg",
+    "drive": "20260510_172711.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260517_133919.jpg",
+    "drive": "20260517_133919.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260517_143341.jpg",
+    "drive": "20260517_143341.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260517_154559.jpg",
+    "drive": "20260517_154559.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260517_162903.jpg",
+    "drive": "20260517_162903.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260518_133653.jpg",
+    "drive": "20260518_133653.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260524_185313.jpg",
+    "drive": "20260524_185313.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260524_210149.jpg",
+    "drive": "20260524_210149.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260525_154847.jpg",
+    "drive": "20260525_154847.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260526_114329.jpg",
+    "drive": "20260526_114329.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260526_213350.jpg",
+    "drive": "20260526_213350.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260527_072457.jpg",
+    "drive": "20260527_072457.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/bg-20260611_181106.jpg",
+    "drive": "20260611_181106.jpg",
+    "title": "",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  },
+  {
+    "src": "/bg/lake-bled.jpg",
+    "drive": "20260718_163159.jpg",
+    "title": "Lake Bled, Slovenia",
+    "artist": "Danny Fainozzi",
+    "license": "",
+    "page": ""
+  }
 ]
