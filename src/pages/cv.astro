@@ -35,7 +35,7 @@ const blocks = [
     ))}
     <section class="reveal wide card">
       <h2>Collaborations & service</h2>
-      <ul class="svc">{service.map((s) => <li>{s}</li>)}</ul>
+      <ul class="svc">{service.map((s) => <li set:html={s} />)}</ul>
     </section>
   </div>
 </Base>

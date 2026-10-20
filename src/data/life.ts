@@ -13,7 +13,7 @@ export const education = [
 ];
 
 export const service = [
-  'SNSF COST project cooperation (CHF 400,000), awarded together with Prof. Andrea Cannizzo, linked to COST Action CA22148',
+  '<a href="https://data.snf.ch/grants/grant/10007385">SNSF COST project 10007385</a> (CHF 398,800, 2026–2029) on deep- and extreme-UV four-wave mixing in carbonaceous nanomaterials, won together with Prof. Andrea Cannizzo',
   'Member of COST Action CA22148 (nonlinear EUV to hard X-ray techniques) since its start',
   'Shift leader and lead data analyst, X-ray transient grating long-term proposal, European XFEL (FXE & MID)',
   'Coordinator of experimental campaigns at SACLA and LCLS',
