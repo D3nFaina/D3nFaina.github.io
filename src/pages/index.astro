@@ -11,10 +11,11 @@ import { readFileSync } from 'node:fs';
 
 const featured = projects.filter((p) => p.featured);
 const selected = publications.filter((p) => p.first && !p.status).slice(0, 4);
-// Random Japan background: picked at build time by scripts/fetch-japan.mjs.
-// Swap in your own photos later by dropping them in public/japan/ with a manifest.json.
+// Hero background: Den's own photos in public/bg/ (listed in its manifest.json).
+// Falls back to the random Wikimedia Japan set from scripts/fetch-japan.mjs when that list is empty.
 let japan: { src: string; title: string; artist: string; license: string; page: string }[] = [];
-try { japan = JSON.parse(readFileSync('public/japan/manifest.json', 'utf8')); } catch {}
+try { japan = JSON.parse(readFileSync('public/bg/manifest.json', 'utf8')); } catch {}
+if (!japan.length) try { japan = JSON.parse(readFileSync('public/japan/manifest.json', 'utf8')); } catch {}
 const initials = profile.name.split(' ').map((w) => w[0]).join('');
 ---
 <Base>
@@ -126,8 +127,8 @@ const initials = profile.name.split(' ').map((w) => w[0]).join('');
     };
     img.src = pick.src;
     const credit = hero.querySelector<HTMLAnchorElement>('.credit')!;
-    credit.href = pick.page;
-    credit.textContent = `${pick.title} · ${pick.artist} · ${pick.license}`;
+    if (pick.page) credit.href = pick.page;
+    credit.textContent = [pick.title, pick.artist, pick.license].filter(Boolean).join(' · ');
   }
 </script>
 
