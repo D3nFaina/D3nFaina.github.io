@@ -1,7 +1,10 @@
 ---
-// Print layout for the downloadable CV (public/cv.pdf), modelled on the SNSF CV format and
-// extended to the whole career. Not linked anywhere; scripts/cv-pdf.cjs prints it to PDF.
-import { profile } from '../data/profile';
+// Print layout for the downloadable CV (public/cv.pdf): the SNSF CV structure, extended to the whole
+// career and styled like the website. Not linked anywhere; scripts/cv-pdf.cjs prints it to PDF.
+import '@fontsource-variable/inter';
+import '@fontsource-variable/fraunces';
+import '@fontsource/caveat/600.css';
+import { profile, stats } from '../data/profile';
 import { publications } from '../data/publications';
 
 const pubs = publications;
@@ -37,6 +40,8 @@ const service = [
   'Author of custom analysis codes for FEL four-wave-mixing data, shared with collaborators and students and open-sourced whenever possible.',
 ];
 const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+const years = [...new Set(pubs.map((p) => p.year))].sort((a, b) => b - a);
+const stays2 = stays;
 ---
 <!doctype html>
 <html lang="en">
@@ -47,53 +52,59 @@ const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'l
 </head>
 <body data-date={today}>
   <header class="top">
-    <h1>CV</h1>
-    <div class="name">{profile.title}</div>
-    <div class="meta">Current position: Advanced Postdoctoral Researcher, Institute of Applied Physics, University of Bern</div>
-    <div class="meta">
-      <a href={`mailto:${profile.email}`}>{profile.email}</a> · <a href="https://d3nfaina.github.io">d3nfaina.github.io</a> ·
-      ORCID iD <a href={profile.links.orcid}>0000-0001-7380-8324</a> · <a href={profile.links.github}>github.com/D3nFaina</a>
+    <img class="photo" src={profile.photo} alt="" />
+    <div>
+      <div class="eyebrow">Curriculum vitae</div>
+      <div class="name"><span class="dr">Dr.</span> Danny Fainozzi</div>
+      <div class="role">Physicist · ultrafast EUV and X-ray science</div>
+      <div class="now">Advanced Postdoctoral Researcher, Institute of Applied Physics, University of Bern</div>
+      <div class="contact">
+        <a href={`mailto:${profile.email}`}>{profile.email}</a>
+        <a href="https://d3nfaina.github.io">d3nfaina.github.io</a>
+        <a href={profile.links.orcid}>ORCID 0000-0001-7380-8324</a>
+        <a href={profile.links.github}>github.com/D3nFaina</a>
+      </div>
     </div>
   </header>
+  <div class="bar"></div>
+  <p class="pitch">{profile.pitch}</p>
+  <div class="stats">{stats.map((s) => <div><b>{s.value}</b><span>{s.label}</span></div>)}</div>
 
   <section>
-    <h2>Education</h2>
-    <table>
-      <thead><tr><th>Degree</th><th>Organisation</th><th>Duration</th></tr></thead>
-      <tbody>{education.map(([a, b, c, d, e, f]) => <tr><td>{a}<span>{b}</span></td><td>{c}<span>{d}</span></td><td>{e}<span>{f}</span></td></tr>)}</tbody>
-    </table>
+    <h2><i>01</i>Employment</h2>
+    <ol class="tl">{employment.map(([a, b, c, d, e, f]) => (
+      <li><div class="when">{e}<span>{f}</span></div><div><div class="what">{a}</div><div class="org">{c} · {d}</div><div class="who">{b}</div></div></li>
+    ))}</ol>
   </section>
 
   <section>
-    <h2>Employment</h2>
-    <table>
-      <thead><tr><th>Role</th><th>Organisation</th><th>Duration</th></tr></thead>
-      <tbody>{employment.map(([a, b, c, d, e, f]) => <tr><td>{a}<span>{b}</span></td><td>{c}<span>{d}</span></td><td>{e}<span>{f}</span></td></tr>)}</tbody>
-    </table>
+    <h2><i>02</i>Education</h2>
+    <ol class="tl">{education.map(([a, b, c, d, e, f]) => (
+      <li><div class="when">{e}<span>{f}</span></div><div><div class="what">{a}</div><div class="org">{c} · {d}</div><div class="who">Advisor: {b}</div></div></li>
+    ))}</ol>
   </section>
 
   <section>
-    <h2>Research stays abroad</h2>
-    <table>
-      <thead><tr><th>Role</th><th>Organisation</th><th>Duration</th></tr></thead>
-      <tbody>{stays.map(([a, b, c, d, e]) => <tr><td>{a}<span>{b}</span></td><td>{c}<span>{d}</span></td><td>{e}</td></tr>)}</tbody>
-    </table>
+    <h2><i>03</i>Research stays abroad</h2>
+    <ol class="tl">{stays2.map(([a, b, c, d, e]) => (
+      <li><div class="when">{e}</div><div><div class="what">{a}</div><div class="org">{c} · {d}</div><div class="who">Host: {b}</div></div></li>
+    ))}</ol>
   </section>
 
   <section>
-    <h2>Large-scale facilities</h2>
+    <h2><i>04</i>Large-scale facilities</h2>
     <p class="lead">More than ten years of experiments with femtosecond EUV and X-ray free-electron lasers, plus ultrafast optical tabletop setups.</p>
-    <table class="fac">
-      <thead><tr><th>Facility</th><th>Endstation</th><th>Role</th></tr></thead>
-      <tbody>{facilities.map(([a, b, c]) => <tr><td>{a}</td><td>{b}</td><td>{c}</td></tr>)}</tbody>
-    </table>
+    <div class="fac">{facilities.map(([a, b, c]) => (
+      <div><div class="fn">{a}{b && <span>{b}</span>}</div><p>{c}</p></div>
+    ))}</div>
   </section>
 
-  <section class="ach">
-    <h2>Major achievements</h2>
-
-    <h3>Achievement 1 · Nanoscale acoustics and heat with EUV transient gratings</h3>
-    <p>
+  <section>
+    <h2><i>05</i>Major achievements</h2>
+    <article class="ach" style="--c: var(--cyan)">
+      <div class="ach-n">01</div>
+      <div><h3>Nanoscale acoustics and heat with EUV transient gratings</h3>
+<p>
       In a transient grating (TG) experiment two time-coincident pump pulses of wavelength λ cross on the sample at an angle 2θ and write a
       spatial modulation of excitation with period Λ = λ/(2 sin θ); a delayed probe pulse diffracts from it and reads out how it evolves.
       Free-electron lasers extend this approach into the extreme ultraviolet {r('10.1016/j.pacs.2023.100453')}, giving contactless access to
@@ -107,9 +118,12 @@ const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'l
       gratings {r('10.1038/s41467-024-54799-6')}, time-domain EUV diffuse-scattering spectroscopy of surface phonons {r('10.1103/dq8w-62bm')},
       and the electron-lattice coupling and bilayer thermoelasticity of metal films {r('10.1103/j1rk-j6rt', '10.1063/5.0340562')}.
     </p>
-
-    <h3>Achievement 2 · Pioneering hard X-ray transient gratings</h3>
-    <p>
+      </div>
+    </article>
+    <article class="ach" style="--c: var(--violet)">
+      <div class="ach-n">02</div>
+      <div><h3>Pioneering hard X-ray transient gratings</h3>
+<p>
       I contributed to the first hard X-ray transient grating, an X-ray pump / optical probe proof of principle on bismuth germanate at
       SwissFEL {r('10.1038/s41566-021-00797-9')}, supported by heterodyne-detected optical TG data {r('10.48550/arXiv.2309.02308')}, with
       responsibility for preparation, execution and data analysis. I then wrote the experimental protocols for X-ray TG at FELs
@@ -122,76 +136,118 @@ const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'l
       since launched coherent spin waves {r('10.1103/zybx-dqfc')}. The technique is developed under a long-term proposal at the European XFEL,
       where I am shift leader and lead data analyst at FXE and MID, and I coordinated campaigns at SACLA and LCLS.
     </p>
-
-    <h3>Achievement 3 · Single-shot three-dimensional EUV imaging</h3>
-    <p>
+      </div>
+    </article>
+    <article class="ach" style="--c: var(--amber)">
+      <div class="ach-n">03</div>
+      <div><h3>Single-shot three-dimensional EUV imaging</h3>
+<p>
       I demonstrated stereoscopic three-dimensional coherent diffraction imaging with a single EUV FEL pulse, reaching sub-micrometre
       resolution {r('10.1364/OPTICA.492730')}, as experimentalist and data analyst. Single-shot 3D imaging opens a route to nanostructures in
       radiation-sensitive samples such as molecules, bacteria and viruses, without averaging over many identical copies.
     </p>
-
-    <h3>Achievement 4 · Spin waves, phonons and EUV optics</h3>
-    <p>
+      </div>
+    </article>
+    <article class="ach" style="--c: var(--rose)">
+      <div class="ach-n">04</div>
+      <div><h3>Spin waves, phonons and EUV optics</h3>
+<p>
       In collaborative EUV TG campaigns I contributed to the excitation and detection of coherent nanoscale spin waves, supported by optical
       Faraday-rotation data I took during a research stay in Keith Nelson's group at MIT {r('10.1126/sciadv.adp6015')}; to understanding how
       echo interference controls phonon attenuation in nanophononic membranes {r('10.1038/s41467-024-45571-x')}; to a high-efficiency
       programmable modulator for EUV light {r('10.1038/s41566-024-01389-z')}; and to element- and enantiomer-selective real-time
       visualization of molecular motion {r('10.1038/s41467-023-36047-5')}.
     </p>
+      </div>
+    </article>
   </section>
 
   <section>
-    <h2>Collaborations, leadership and service</h2>
-    <ul>{service.map((s) => <li>{s}</li>)}</ul>
+    <h2><i>06</i>Collaborations, leadership and service</h2>
+    <ul class="svc">{service.map((s) => <li>{s}</li>)}</ul>
   </section>
 
   <section class="pubs">
-    <h2>Publications</h2>
-    <p class="lead">{pubs.length} selected peer-reviewed articles and preprints; first-author works marked ★. Full list on ORCID.</p>
-    <ol>
-      {pubs.map((p) => (
-        <li>
-          <span set:html={bold(p.authors)} /> ({p.year}). {p.title}. <i>{p.venue}</i>.{p.status && ` ${p.status[0].toUpperCase()}${p.status.slice(1)}.`}
-          {' '}<a href={`https://doi.org/${p.doi}`}>doi:{p.doi}</a>{p.first && ' ★'}
-        </li>
-      ))}
-    </ol>
+    <h2><i>07</i>Publications</h2>
+    <p class="lead">{pubs.length} selected peer-reviewed articles and preprints. <span class="fa">First author</span> marks first-author works; numbers match the references above. Full list on ORCID.</p>
+    {years.map((y) => (
+      <div class="yr">
+        <div class="y">{y}</div>
+        <ol>{pubs.filter((p) => p.year === y).map((p) => (
+          <li value={n(p.doi)}>
+            <div class="pt">{p.title}{p.first && <span class="fa">First author</span>}</div>
+            <div class="pa" set:html={bold(p.authors)} />
+            <div class="pv"><i>{p.venue}</i>{p.status && ` · ${p.status}`} · <a href={`https://doi.org/${p.doi}`}>doi:{p.doi}</a></div>
+          </li>
+        ))}</ol>
+      </div>
+    ))}
   </section>
 </body>
 </html>
 
 <style is:global>
-  @import '@fontsource-variable/inter';
-  @page { size: A4; margin: 22mm 18mm 20mm; }
+  @page { size: A4; margin: 18mm 16mm 18mm; }
+  :root { --ink: #16151a; --soft: #4a4853; --mute: #7b7884; --line: #e6e3ec; --tint: #f5f3fb;
+    --accent: #5b3df5; --violet: #7c5cff; --cyan: #06b6d4; --amber: #f59e0b; --rose: #f43f5e; }
   * { box-sizing: border-box; }
   html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body { margin: 0; font-family: 'Inter Variable', Arial, sans-serif; font-size: 9.6pt; line-height: 1.42; color: #1a1a1a; }
+  body { margin: 0; font-family: 'Inter Variable', Arial, sans-serif; font-size: 9.3pt; line-height: 1.45; color: var(--ink); }
   a { color: inherit; text-decoration: none; }
-  .top { margin-bottom: 14mm; }
-  h1 { font-size: 26pt; font-weight: 700; margin: 0 0 6mm; letter-spacing: -0.01em; }
-  .name { font-size: 15pt; font-weight: 650; }
-  .meta { color: #444; margin-top: 1.2mm; }
-  .meta a { color: #c8102e; }
-  section { margin-bottom: 9mm; }
-  h2 { font-size: 13pt; font-weight: 700; margin: 0 0 3.5mm; padding-bottom: 1.5mm; border-bottom: 1.2pt solid #c8102e; break-after: avoid; }
-  h3 { font-size: 10.2pt; font-weight: 650; margin: 5mm 0 1.5mm; break-after: avoid; }
-  p { margin: 0 0 2.4mm; text-align: justify; hyphens: auto; }
-  .lead { color: #444; text-align: left; }
-  table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; font-weight: 650; font-size: 8.6pt; color: #666; padding: 0 3mm 1.6mm 0; border-bottom: 0.6pt solid #bbb; }
-  td { vertical-align: top; padding: 2.4mm 3mm 2.4mm 0; border-bottom: 0.6pt solid #e2e2e2; break-inside: avoid; }
-  td span { display: block; color: #555; font-size: 8.8pt; }
-  th:nth-child(1), td:nth-child(1) { width: 38%; }
-  th:nth-child(3), td:nth-child(3) { width: 22%; }
-  .fac th:nth-child(1), .fac td:nth-child(1) { width: 28%; }
-  .fac th:nth-child(2), .fac td:nth-child(2) { width: 15%; color: #555; }
-  .fac th:nth-child(3), .fac td:nth-child(3) { width: auto; }
-  tr { break-inside: avoid; }
-  ul { margin: 0; padding-left: 4.5mm; }
-  li { margin-bottom: 1.6mm; }
+  .top { display: grid; grid-template-columns: 30mm 1fr; gap: 7mm; align-items: center; }
+  .photo { width: 30mm; height: 30mm; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1.2mm #fff, 0 0 0 1.6mm var(--line); }
+  .eyebrow { font-size: 7.5pt; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--accent); }
+  .name { font-family: 'Caveat', cursive; font-weight: 600; font-size: 38pt; line-height: 1; margin: 1mm 0 1.5mm; }
+  .dr { font-size: 22pt; color: var(--mute); }
+  .role { font-family: 'Fraunces Variable', Georgia, serif; font-style: italic; font-size: 12pt; color: var(--soft); }
+  .now { color: var(--soft); margin-top: .8mm; }
+  .contact { display: flex; flex-wrap: wrap; gap: 1.5mm; margin-top: 2.5mm; }
+  .contact a { font-size: 8pt; font-weight: 550; color: var(--accent); background: var(--tint); border-radius: 99px; padding: .8mm 2.6mm; }
+  .bar { height: 1.2mm; border-radius: 1mm; margin: 6mm 0 5mm; background: linear-gradient(90deg, var(--violet), var(--cyan)); }
+  .pitch { font-family: 'Fraunces Variable', Georgia, serif; font-size: 11pt; line-height: 1.45; margin: 0 0 5mm; color: var(--ink); }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin-bottom: 8mm; }
+  .stats div { background: var(--tint); border-radius: 3mm; padding: 3mm 3.5mm; }
+  .stats b { display: block; font-family: 'Fraunces Variable', Georgia, serif; font-size: 17pt; font-weight: 600; line-height: 1.1; color: var(--accent); }
+  .stats span { font-size: 7.8pt; color: var(--soft); }
+  section { margin-bottom: 7mm; }
+  h2 { display: flex; align-items: baseline; gap: 3mm; font-family: 'Fraunces Variable', Georgia, serif; font-weight: 600; font-size: 15pt; margin: 0 0 3.5mm; break-after: avoid; }
+  h2 i { font-family: 'Inter Variable', sans-serif; font-style: normal; font-size: 7.5pt; font-weight: 700; letter-spacing: .12em; color: var(--accent); }
+  h2::after { content: ''; flex: 1; height: .3mm; background: var(--line); transform: translateY(-1.2mm); }
+  .lead { color: var(--soft); margin: 0 0 3mm; }
+  .tl { list-style: none; margin: 0; padding: 0; }
+  .tl li { display: grid; grid-template-columns: 30mm 1fr; gap: 5mm; padding: 0 0 3.5mm; position: relative; break-inside: avoid; }
+  .tl li::before { content: ''; position: absolute; left: 32.3mm; top: 1.4mm; width: 2mm; height: 2mm; border-radius: 50%; background: #fff; border: .5mm solid var(--accent); }
+  .tl li::after { content: ''; position: absolute; left: 33.25mm; top: 4mm; bottom: 0; width: .25mm; background: var(--line); }
+  .tl li:last-child::after { display: none; }
+  .tl li > div:last-child { padding-left: 2mm; }
+  .when { font-size: 8.4pt; font-weight: 650; color: var(--accent); text-align: right; padding-right: 2mm; }
+  .when span { display: block; font-weight: 450; color: var(--mute); }
+  .what { font-weight: 650; font-size: 10pt; }
+  .org { color: var(--soft); }
+  .who { color: var(--mute); font-size: 8.5pt; }
+  .fac { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
+  .fac > div { border: .3mm solid var(--line); border-radius: 3mm; padding: 3mm 3.5mm; break-inside: avoid; }
+  .fn { font-weight: 650; display: flex; justify-content: space-between; gap: 2mm; }
+  .fn span { font-size: 7.5pt; font-weight: 600; color: var(--accent); background: var(--tint); border-radius: 99px; padding: .3mm 2mm; white-space: nowrap; }
+  .fac p { margin: 1mm 0 0; color: var(--soft); font-size: 8.6pt; }
+  .ach { break-inside: avoid; display: grid; grid-template-columns: 9mm 1fr; gap: 3mm; padding: 3.5mm 4mm 1.5mm 3mm; margin-bottom: 3mm; border-radius: 3mm;
+    background: color-mix(in srgb, var(--c) 6%, #fff); border-left: 1mm solid var(--c); }
+  .ach-n { font-family: 'Fraunces Variable', Georgia, serif; font-size: 15pt; font-weight: 600; color: var(--c); line-height: 1.1; }
+  .ach h3 { font-family: 'Fraunces Variable', Georgia, serif; font-weight: 600; font-size: 11pt; margin: 0 0 1.5mm; break-after: avoid; }
+  .ach p { margin: 0 0 2mm; text-align: justify; hyphens: auto; }
+  .svc { margin: 0; padding: 0; list-style: none; }
+  .svc li { position: relative; padding-left: 5mm; margin-bottom: 1.6mm; }
+  .svc li::before { content: ''; position: absolute; left: .5mm; top: 1.6mm; width: 1.8mm; height: 1.8mm; border-radius: .5mm; background: linear-gradient(135deg, var(--violet), var(--cyan)); }
+  .fa { display: inline-block; font-family: 'Inter Variable', sans-serif; font-size: 6.8pt; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); background: var(--tint); border-radius: 99px; padding: .2mm 1.8mm; margin-left: 1.5mm; vertical-align: .3mm; }
+  .yr { display: grid; grid-template-columns: 16mm 1fr; gap: 3mm; margin-bottom: 1mm; }
+  .y { font-family: 'Fraunces Variable', Georgia, serif; font-size: 14pt; font-weight: 600; color: var(--accent); line-height: 1.2; }
   .pubs ol { margin: 0; padding-left: 6mm; }
-  .pubs li { margin-bottom: 2.2mm; font-size: 9pt; break-inside: avoid; }
-  .pubs li a { color: #c8102e; }
-  .pubs b { font-weight: 700; }
-  @media screen { body { max-width: 180mm; margin: 20mm auto; } }
+  .pubs li { margin-bottom: 2.6mm; break-inside: avoid; }
+  .pubs li::marker { color: var(--mute); font-size: 8pt; }
+  .pt { font-weight: 600; }
+  .pa { color: var(--soft); font-size: 8.4pt; }
+  .pa b { color: var(--ink); font-weight: 700; }
+  .pv { font-size: 8.4pt; color: var(--mute); }
+  .pv a { color: var(--accent); }
+  @media screen { body { max-width: 178mm; margin: 16mm auto; } }
 </style>
