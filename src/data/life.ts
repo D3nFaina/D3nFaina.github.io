@@ -21,16 +21,16 @@ export const service = [
 ];
 
 // Interests: replace with your own. `emoji` is optional.
-export const interests: { title: string; emoji?: string; text: string; link?: { href: string; label: string } }[] = [
-  { title: 'Mountains', emoji: '🏔️', text: 'Living in Bern means the Alps are a train ride away. Hiking, ski touring, and a lot of fondue afterwards.' },
-  { title: 'Code', emoji: '💻', text: 'I enjoy building small tools: analysis pipelines, data viewers, and the occasional side project on GitHub.' },
-  { title: 'Photography', emoji: '📷', text: 'Mostly landscapes from trips and beamtimes in places I would never have seen otherwise.' },
+// `img` (in public/interests/) replaces the emoji with a picture.
+export const interests: { title: string; emoji?: string; img?: string; text: string; link?: { href: string; label: string } }[] = [
+  { title: 'Code', img: '/interests/code.jpg', text: 'I enjoy building small tools: analysis pipelines, data viewers, and the occasional side project on GitHub.' },
+  { title: 'Photography', img: '/interests/photography.jpg', text: 'Mostly landscapes from trips and beamtimes in places I would never have seen otherwise.' },
   {
-    title: 'Finance', emoji: '📈',
+    title: 'Finance', img: '/interests/finance.jpg',
     text: 'Markets are another noisy time series, so I treat them like data: long-run returns, cycles and the odd backtest. My Bitcoin Cycle Planner turns a halving-cycle strategy into a concrete buy and exit plan, and comes with price history since 2011.',
     link: { href: 'https://github.com/D3nFaina/btc-cycle-planner', label: 'Bitcoin Cycle Planner on GitHub' },
   },
-  { title: 'Food', emoji: '🍝', text: 'Italian by birth, so this one is not optional.' },
+  { title: 'Food', img: '/interests/food.jpg', text: 'Italian by birth, so this one is not optional.' },
 ];
 
 // Countries you have visited, spelled as in the world map data (e.g. 'United States of America').
