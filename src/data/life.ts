@@ -8,7 +8,7 @@ export const experience = [
 
 export const education = [
   { when: '2017 – 2020', role: 'PhD in Physics', org: 'University of Trieste & Elettra Sincrotrone Trieste', detail: 'Advisor: Dr. Claudio Masciovecchio' },
-  { when: '2015 – 2017', role: 'MSc in Condensed Matter Physics', org: 'University of Trieste & Kyoto Institute of Technology', detail: 'Advisor: Prof. Fulvio Parmigiani' },
+  { when: '2015 – 2017', role: 'MSc in Condensed Matter Physics', org: 'University of Trieste & Kyoto Institute of Technology', detail: 'Advisor: Prof. Fulvio Parmigiani; host in Kyoto: Prof. Giuseppe Pezzotti' },
   { when: '2012 – 2015', role: 'BSc in Physics', org: 'University of Trieste', detail: 'Advisor: Prof. Fulvio Parmigiani' },
 ];
 
