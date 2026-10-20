@@ -13,6 +13,7 @@ export const education = [
 ];
 
 export const service = [
+  'SNSF COST project cooperation (CHF 400,000), awarded together with Prof. Andrea Cannizzo, linked to COST Action CA22148',
   'Member of COST Action CA22148 (nonlinear EUV to hard X-ray techniques) since its start',
   'Shift leader and lead data analyst, X-ray transient grating long-term proposal, European XFEL (FXE & MID)',
   'Coordinator of experimental campaigns at SACLA and LCLS',
