@@ -1,7 +1,6 @@
 ---
 // Home-page landing: the site's sections as balls bouncing around Den's winged portrait
-// rising out of a "Dr D. Fainozzi" can. Physics runs in the script below; the can is plain SVG.
-import '@fontsource/lobster/400.css';
+// rising out of a "Dr D. Fainozzi" can (one composite image, public/home/den-can.*). Physics runs below.
 import Icon from './Icon.astro';
 import { profile, stats } from '../data/profile';
 
@@ -16,94 +15,15 @@ const balls = [
   { href: '/notes', label: 'Notes', s: 0.62, c: ['#f1e6cf', '#c4a473'], fx: 'saturn' },
 ];
 
-// The badge counts papers; strip the "+" for the big number.
-const papers = stats[0]?.value ?? '';
-const papersN = papers.replace(/\D/g, '');
-
-// Condensation drops, seeded so the build is stable.
-let seed = 7;
-const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-const drops = Array.from({ length: 70 }, () => ({
-  x: 215 + rnd() * 375, y: 500 + rnd() * 740, r: 1.2 + rnd() * 3.4,
-}));
-const cx = 402;
 ---
 <section class="stage" aria-label="Home">
   <div class="space" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 
-  <figure class="figure" aria-label={`${profile.title} with painted wings, rising out of a soda can`}>
-    <svg class="can" viewBox="0 0 480 845" role="img" aria-hidden="true">
-      <defs>
-        <radialGradient id="fade" cx="245" cy="250" r="238" gradientUnits="userSpaceOnUse">
-          <stop offset=".42" stop-color="#fff" />
-          <stop offset=".62" stop-color="#fff" stop-opacity=".8" />
-          <stop offset=".82" stop-color="#fff" stop-opacity=".3" />
-          <stop offset="1" stop-color="#fff" stop-opacity="0" />
-        </radialGradient>
-        <mask id="photo-fade" maskUnits="userSpaceOnUse" x="0" y="0" width="480" height="480">
-          <rect width="480" height="480" fill="url(#fade)" />
-        </mask>
-        <linearGradient id="body" x1="0" x2="1">
-          <stop offset="0" stop-color="#2c050c" />
-          <stop offset=".14" stop-color="#6b1020" />
-          <stop offset=".34" stop-color="#9c1f34" />
-          <stop offset=".43" stop-color="#c94a62" />
-          <stop offset=".5" stop-color="#a42339" />
-          <stop offset=".72" stop-color="#7a1426" />
-          <stop offset="1" stop-color="#2a050b" />
-        </linearGradient>
-        <linearGradient id="metal" x1="0" x2="1">
-          <stop offset="0" stop-color="#6d7178" />
-          <stop offset=".3" stop-color="#e9ecef" />
-          <stop offset=".5" stop-color="#b9bec4" />
-          <stop offset=".7" stop-color="#f5f6f7" />
-          <stop offset="1" stop-color="#5f636a" />
-        </linearGradient>
-        <radialGradient id="hole" cx=".5" cy=".4" r=".6">
-          <stop offset="0" stop-color="#15030a" />
-          <stop offset="1" stop-color="#3a0912" />
-        </radialGradient>
-        <path id="badge-arc" d={`M ${cx - 117} 1010 a 57 57 0 1 1 114 0 a 57 57 0 1 1 -114 0`} />
-      </defs>
-
-      <!-- the whole profile picture, fading out at the edges -->
-      <image href="/home/den-wings.jpg" x="0" y="0" width="480" height="480" mask="url(#photo-fade)" preserveAspectRatio="xMidYMid slice" />
-
-      <g transform="translate(74 203.2) scale(.4975)">
-        <!-- back of the lid and the opening -->
-        <ellipse cx={cx} cy="476" rx="178" ry="24" fill="url(#metal)" />
-        <ellipse cx={cx} cy="478" rx="150" ry="17" fill="url(#hole)" />
-      </g>
-      <!-- his torso again, so it sits inside the opening -->
-      <image href="/home/den-torso.png" x="185" y="370" width="170" height="110" />
-
-      <g transform="translate(74 203.2) scale(.4975)">
-        <path
-          d={`M ${cx - 178} 476 C ${cx - 180} 492 ${cx - 201} 500 ${cx - 201} 525 L ${cx - 201} 1222 C ${cx - 201} 1240 ${cx - 184} 1250 ${cx - 182} 1262 A 182 22 0 0 0 ${cx + 182} 1262 C ${cx + 184} 1250 ${cx + 201} 1240 ${cx + 201} 1222 L ${cx + 201} 525 C ${cx + 201} 500 ${cx + 180} 492 ${cx + 178} 476 A 178 24 0 0 1 ${cx - 178} 476 Z`}
-          fill="url(#body)" />
-        <path d={`M ${cx - 178} 476 A 178 24 0 0 0 ${cx + 178} 476 C ${cx + 182} 492 ${cx + 196} 498 ${cx + 199} 512 A 199 26 0 0 1 ${cx - 199} 512 C ${cx - 196} 498 ${cx - 182} 492 ${cx - 178} 476 Z`} fill="url(#metal)" opacity=".95" />
-        <path d={`M ${cx - 201} 1222 C ${cx - 201} 1240 ${cx - 184} 1250 ${cx - 182} 1262 A 182 22 0 0 0 ${cx + 182} 1262 C ${cx + 184} 1250 ${cx + 201} 1240 ${cx + 201} 1222 A 201 24 0 0 1 ${cx - 201} 1222 Z`} fill="url(#metal)" />
-
-        <!-- logo: one script for "Dr" and "D. Fainozzi", laid out like the original -->
-        <g class="logo" fill="#fff">
-          <ellipse cx={cx + 4} cy="790" rx="194" ry="112" fill="none" stroke="#fff" stroke-width="6" transform={`rotate(-8 ${cx} 790)`} />
-          <text x={cx + 84} y="772" text-anchor="middle" font-family="Lobster, cursive" font-size="104">Dr</text>
-          <text x={cx - 2} y="852" text-anchor="middle" font-family="Lobster, cursive" font-size="74" textLength="300" lengthAdjust="spacingAndGlyphs">D. Fainozzi</text>
-          <text x={cx + 118} y="932" text-anchor="middle" font-family="Inter Variable, sans-serif" font-weight="600" font-size="26">Est.2020</text>
-          <circle cx={cx - 60} cy="1010" r="70" fill="none" stroke="#fff" stroke-width="4" />
-          <circle cx={cx - 60} cy="1010" r="44" fill="none" stroke="#fff" stroke-width="3" />
-          <text x={cx - 60} y="1030" text-anchor="middle" font-family="Lobster, cursive" font-size="54">{papersN}</text>
-          <text font-family="Inter Variable, sans-serif" font-weight="700" font-size="12.5" letter-spacing="1.6">
-            <textPath href="#badge-arc" startOffset="0">AUTHENTIC BLEND OF {papers} PAPERS ·</textPath>
-          </text>
-        </g>
-
-        <g fill="#fff">
-          {drops.map((d) => <ellipse cx={d.x} cy={d.y} rx={d.r * 0.8} ry={d.r} opacity={0.12 + (d.r / 4.6) * 0.22} />)}
-        </g>
-        <path d={`M ${cx - 60} 520 L ${cx - 30} 520 L ${cx - 30} 1236 L ${cx - 60} 1236 Z`} fill="#fff" opacity=".08" />
-      </g>
-    </svg>
+  <figure class="figure">
+    <picture>
+      <source srcset="/home/den-can.webp" type="image/webp" />
+      <img src="/home/den-can.png" width="1181" height="1147" alt={`${profile.title} in front of painted angel wings, rising out of a Dr D. Fainozzi soda can`} />
+    </picture>
   </figure>
 
   <nav class="balls" aria-label="Sections">
@@ -153,8 +73,8 @@ const cx = 402;
     const s = stage.getBoundingClientRect();
     W = s.width; H = s.height;
     const f = figure.getBoundingClientRect();
-    // The middle of the portrait (Den and the wings' inner edge) and the can.
-    ob = { x0: f.left - s.left + f.width * 0.2, x1: f.left - s.left + f.width * 0.8, y0: f.top - s.top + f.height * 0.08, y1: f.top - s.top + f.height * 0.99 };
+    // Den, the inner half of the wings and the can.
+    ob = { x0: f.left - s.left + f.width * 0.27, x1: f.left - s.left + f.width * 0.73, y0: f.top - s.top + f.height * 0.12, y1: f.top - s.top + f.height * 0.99 };
     BOT = W < 760 ? caption.offsetHeight : 0;
     const base = Math.min(W, H) * (W < 640 ? 0.12 : 0.105);
     for (const b of balls) {
@@ -370,14 +290,14 @@ const cx = 402;
   @keyframes swap { from { opacity: 0; } to { opacity: 1; } }
 
   .figure {
-    position: absolute; left: 50%; top: 53%; margin: 0;
-    height: min(86%, 980px); aspect-ratio: 480 / 845;
+    position: absolute; left: 50%; top: 54%; margin: 0;
+    height: min(88%, 1000px); aspect-ratio: 1181 / 1147; max-width: 100%;
     transform: translate(-50%, -50%);
     animation: float 8s ease-in-out infinite;
     pointer-events: none;
   }
-  @keyframes float { 50% { transform: translate(-50%, calc(-50% - 12px)); } }
-  .can { width: 100%; height: 100%; overflow: visible; display: block; filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.45)); }
+  @keyframes float { 50% { transform: translate(-50%, calc(-50% - 10px)); } }
+  .figure img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
   .balls { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
   .ball {
@@ -449,7 +369,7 @@ const cx = 402;
   @keyframes nudge { 50% { translate: -50% 6px; } }
 
   @media (max-width: 760px) {
-    .figure { height: min(62%, 560px); top: 50%; }
+    .figure { height: auto; width: 100%; top: 50%; }
     .hint { display: none; }
     .down { display: none; }
     .caption { padding: 0 16px 16px; }
