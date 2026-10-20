@@ -37,8 +37,9 @@ export const countriesVisited = [
 type Photo = { src: string; caption: string };
 
 // Places on the map. kind: 'lived' | 'science' | 'travel'.
-// Trips come from the folder names in Drive (Website_images/Travels); photos live in public/travels/.
-export const places: { name: string; country: string; lat: number; lng: number; kind: 'lived' | 'science' | 'travel'; note: string; year?: string; photos?: Photo[] }[] = [
+// Trips come from the folder names in Drive (Website_images/Travels). `album` names a set in photos.json
+// (every photo of that trip, in public/travels/full and /thumb); `photos` are the captioned favourites.
+export const places: { name: string; country: string; lat: number; lng: number; kind: 'lived' | 'science' | 'travel'; note: string; year?: string; album?: string; photos?: Photo[] }[] = [
   { name: 'Trieste', country: 'Italy', lat: 45.65, lng: 13.78, kind: 'lived', note: 'Studies, PhD and FERMI', year: '2012 – 2024' },
   { name: 'Bern', country: 'Switzerland', lat: 46.95, lng: 7.45, kind: 'lived', note: 'University of Bern', year: '2024 – now' },
   { name: 'Kyoto', country: 'Japan', lat: 35.01, lng: 135.77, kind: 'lived', note: 'Master thesis at Kyoto Institute of Technology, and back in Japan in 2024, 2025 and 2026', year: '2017' },
@@ -48,39 +49,39 @@ export const places: { name: string; country: string; lat: number; lng: number; 
   { name: 'Cambridge, MA', country: 'USA', lat: 42.36, lng: -71.09, kind: 'science', note: 'Research stays at MIT with Keith Nelson', year: '2022 · 2023' },
   { name: 'Menlo Park', country: 'USA', lat: 37.42, lng: -122.2, kind: 'science', note: 'LCLS at SLAC' },
   {
-    name: 'Shanghai', country: 'China', lat: 31.23, lng: 121.47, kind: 'travel', note: 'Skyscrapers, classical gardens and water towns', year: '2019 · 2026',
+    name: 'Shanghai', album: 'china-2019', country: 'China', lat: 31.23, lng: 121.47, kind: 'travel', note: 'Skyscrapers, classical gardens and water towns', year: '2019 · 2026',
     photos: [
-      { src: '/travels/china-shanghai-bund.jpg', caption: 'Pudong from the Bund' },
-      { src: '/travels/china-yu-garden.jpg', caption: 'Yu Garden' },
-      { src: '/travels/china-water-town.jpg', caption: 'A water town near Shanghai' },
-      { src: '/travels/china-pagoda.jpg', caption: 'Pagoda' },
-      { src: '/travels/china-shanghai-tower.jpg', caption: 'Shanghai Tower at night' },
+      { src: '/travels/full/20190701_151331.jpg', caption: 'Pudong from the Bund' },
+      { src: '/travels/full/20190704_144048.jpg', caption: 'Yu Garden' },
+      { src: '/travels/full/20190706_135347.jpg', caption: 'A water town near Shanghai' },
+      { src: '/travels/full/20190707_133535.jpg', caption: 'Pagoda' },
+      { src: '/travels/full/20190704_200047.jpg', caption: 'Shanghai Tower at night' },
     ],
   },
   {
-    name: 'Marrakech & the Atlas', country: 'Morocco', lat: 31.63, lng: -8.0, kind: 'travel', note: 'Gardens, kasbahs and the edge of the desert', year: '2019',
+    name: 'Marrakech & the Atlas', album: 'morocco-2019', country: 'Morocco', lat: 31.63, lng: -8.0, kind: 'travel', note: 'Gardens, kasbahs and the edge of the desert', year: '2019',
     photos: [
-      { src: '/travels/morocco-ait-benhaddou.jpg', caption: 'Aït Benhaddou' },
-      { src: '/travels/morocco-oasis.jpg', caption: 'Oasis valley' },
-      { src: '/travels/morocco-majorelle.jpg', caption: 'Jardin Majorelle, Marrakech' },
-      { src: '/travels/morocco-cedar.jpg', caption: 'Carved cedar' },
+      { src: '/travels/full/20190730_132103.jpg', caption: 'Aït Benhaddou' },
+      { src: '/travels/full/20190731_121845.jpg', caption: 'Oasis valley' },
+      { src: '/travels/full/20190729_173252.jpg', caption: 'Jardin Majorelle, Marrakech' },
+      { src: '/travels/full/20190802_122553.jpg', caption: 'Carved cedar' },
     ],
   },
   {
-    name: 'California, Nevada & Utah', country: 'USA', lat: 36.17, lng: -115.14, kind: 'travel', note: 'A road trip through the American Southwest', year: '2019',
+    name: 'California, Nevada & Utah', album: 'usa-2019', country: 'USA', lat: 36.17, lng: -115.14, kind: 'travel', note: 'A road trip through the American Southwest', year: '2019',
     photos: [
-      { src: '/travels/usa-santa-monica.jpg', caption: 'Santa Monica Pier' },
-      { src: '/travels/usa-grand-canyon.jpg', caption: 'Grand Canyon' },
-      { src: '/travels/usa-las-vegas.jpg', caption: 'Las Vegas' },
+      { src: '/travels/full/20190808_111442.jpg', caption: 'Santa Monica Pier' },
+      { src: '/travels/full/20190812_100820.jpg', caption: 'Grand Canyon' },
+      { src: '/travels/full/20190814_184109.jpg', caption: 'Las Vegas' },
     ],
   },
   {
-    name: 'Madeira', country: 'Portugal', lat: 32.75, lng: -16.95, kind: 'travel', note: 'Levadas, cliffs and the wild north coast', year: '2026',
+    name: 'Madeira', album: 'madeira-2026', country: 'Portugal', lat: 32.75, lng: -16.95, kind: 'travel', note: 'Levadas, cliffs and the wild north coast', year: '2026',
     photos: [
-      { src: '/travels/madeira-north-coast.jpg', caption: 'The north coast' },
-      { src: '/travels/madeira-seixal.jpg', caption: 'Black-pebble beach at Seixal' },
-      { src: '/travels/madeira-bananas.jpg', caption: 'Bananas, of course' },
-      { src: '/travels/madeira-bolo-do-caco.jpg', caption: 'Bolo do caco at the Risco waterfall' },
+      { src: '/travels/full/20261002_141021.jpg', caption: 'The north coast' },
+      { src: '/travels/full/20261003_134317.jpg', caption: 'Black-pebble beach at Seixal' },
+      { src: '/travels/full/20261002_110658.jpg', caption: 'Bananas, of course' },
+      { src: '/travels/full/20261004_140037.jpg', caption: 'Bolo do caco at the Risco waterfall' },
     ],
   },
   { name: 'Spain', country: 'Spain', lat: 40.42, lng: -3.7, kind: 'travel', note: 'Trip to Spain', year: '2023' },
