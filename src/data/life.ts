@@ -31,7 +31,7 @@ export const interests = [
 // The Travels page counts them and shades them on the map.
 export const countriesVisited = [
   'Italy', 'Switzerland', 'Japan', 'Germany', 'United States of America',
-  'China', 'Spain', 'Morocco', 'Philippines', 'Vietnam',
+  'China', 'Spain', 'Morocco', 'Philippines', 'Vietnam', 'Portugal',
 ];
 
 type Photo = { src: string; caption: string };
@@ -72,6 +72,15 @@ export const places: { name: string; country: string; lat: number; lng: number; 
       { src: '/travels/usa-santa-monica.jpg', caption: 'Santa Monica Pier' },
       { src: '/travels/usa-grand-canyon.jpg', caption: 'Grand Canyon' },
       { src: '/travels/usa-las-vegas.jpg', caption: 'Las Vegas' },
+    ],
+  },
+  {
+    name: 'Madeira', country: 'Portugal', lat: 32.75, lng: -16.95, kind: 'travel', note: 'Levadas, cliffs and the wild north coast', year: '2026',
+    photos: [
+      { src: '/travels/madeira-north-coast.jpg', caption: 'The north coast' },
+      { src: '/travels/madeira-seixal.jpg', caption: 'Black-pebble beach at Seixal' },
+      { src: '/travels/madeira-bananas.jpg', caption: 'Bananas, of course' },
+      { src: '/travels/madeira-bolo-do-caco.jpg', caption: 'Bolo do caco at the Risco waterfall' },
     ],
   },
   { name: 'Spain', country: 'Spain', lat: 40.42, lng: -3.7, kind: 'travel', note: 'Trip to Spain', year: '2023' },

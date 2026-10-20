@@ -1,24 +1,69 @@
 ---
 import Base from '../layouts/Base.astro';
-import { geoNaturalEarth1, geoPath } from 'd3-geo';
+import { geoNaturalEarth1, geoMercator, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
 import world from 'world-atlas/countries-110m.json';
+import world50 from 'world-atlas/countries-50m.json';
+import world10 from 'world-atlas/countries-10m.json';
 import { places, countriesVisited } from '../data/life';
+import starred from '../data/starred.json';
 
-// The map is drawn at build time into a plain SVG: no tiles, no API keys.
+// Everything is drawn at build time into plain SVGs: no tiles, no API keys.
+// starred.json = favourite places from Google Maps (Takeout "Saved Places.json"),
+// filtered to sights and food; `t: 1` marks the few shown on the world map.
 const W = 960, H = 470;
 const countries = (feature(world as any, (world as any).objects.countries) as any).features
   .filter((f: any) => f.properties.name !== 'Antarctica');
 const projection = geoNaturalEarth1().fitExtent([[4, 4], [W - 4, H - 4]], { type: 'FeatureCollection', features: countries } as any);
 const path = geoPath(projection);
 const visited = new Set(countriesVisited);
-const shapes = countries.map((f: any) => ({ d: path(f) ?? '', name: f.properties.name as string, on: visited.has(f.properties.name) }));
+
+type Star = { n: string; a: number; o: number; c: string; t: number };
+const stars = starred as Star[];
+const byCountry = new Map<string, Star[]>();
+for (const st of stars) byCountry.set(st.c, [...(byCountry.get(st.c) ?? []), st]);
+const starCountries = [...byCountry.keys()].sort((x, y) => byCountry.get(y)!.length - byCountry.get(x)!.length);
+
+const shapes = countries.map((f: any) => ({
+  d: path(f) ?? '', name: f.properties.name as string,
+  on: visited.has(f.properties.name), zoom: byCountry.has(f.properties.name),
+}));
 const pins = places.map((p, i) => {
   const [x, y] = projection([p.lng, p.lat]) ?? [0, 0];
   return { ...p, x, y, i };
 });
 const unknown = countriesVisited.filter((c) => !shapes.some((s: any) => s.name === c));
 if (unknown.length) console.warn(`travels: not on the map: ${unknown.join(', ')}`);
+
+// A five-pointed star centred on 0,0.
+const starPath = (r: number) => Array.from({ length: 10 }, (_, k) => {
+  const rr = k % 2 ? r * 0.45 : r, t = (Math.PI / 5) * k - Math.PI / 2;
+  return `${k ? 'L' : 'M'}${(rr * Math.cos(t)).toFixed(2)} ${(rr * Math.sin(t)).toFixed(2)}`;
+}).join('') + 'Z';
+// Drop repeated points once coordinates are rounded (10m data has many per pixel).
+const squash = (d: string) => d.replace(/([ML])(-?\d+),(-?\d+)/g, '$1$2,$3').split(/(?=[MZ])/).map((ring) => {
+  let last = '';
+  return ring.replace(/L(-?\d+,-?\d+)/g, (m, xy) => (xy === last ? '' : ((last = xy), m)));
+}).join('');
+const toXY = (pr: any, st: Star) => (pr([st.o, st.a]) ?? [0, 0]).map((v: number) => +v.toFixed(1));
+const topStars = stars.filter((st) => st.t).map((st) => ({ ...st, xy: toXY(projection, st) }));
+
+// One zoomed view per country: Mercator fitted to that country's stars, land clipped to the frame.
+const f50 = (feature(world50 as any, (world50 as any).objects.countries) as any).features;
+const f10 = (feature(world10 as any, (world10 as any).objects.countries) as any).features;
+const views = starCountries.map((c) => {
+  const ps = byCountry.get(c)!;
+  const lo = ps.map((p) => p.o), la = ps.map((p) => p.a);
+  const span = Math.max(Math.max(...lo) - Math.min(...lo), Math.max(...la) - Math.min(...la));
+  const pad = Math.max(1, span * 0.18);
+  const box = { type: 'MultiPoint', coordinates: [[Math.min(...lo) - pad, Math.min(...la) - pad], [Math.max(...lo) + pad, Math.max(...la) + pad]] };
+  const pr = geoMercator().fitExtent([[30, 30], [W - 30, H - 30]], box as any).clipExtent([[0, 0], [W, H]]);
+  const g = geoPath(pr).digits(0); // drawn 1:1, so whole pixels are plenty
+  const land = (span < 3 ? f10 : f50).map((f: any) => ({ d: squash(g(f) ?? ''), home: f.properties.name === c })).filter((l: any) => l.d);
+  // where to fly to on the world map before swapping in the detail view
+  const [[x0, y0], [x1, y1]] = path.bounds(box as any);
+  return { c, land, dots: ps.map((p) => ({ n: p.n, xy: toXY(pr, p) })), fly: [x0, y0, x1 - x0, y1 - y0].map((v) => +v.toFixed(1)) };
+});
 
 const albums = places.filter((p) => p.photos?.length);
 
@@ -41,23 +86,44 @@ const kinds = { lived: 'Lived', science: 'Beamtimes & science', travel: 'Travel'
     <div class="legend">
       <span><i class="sw visited"></i>Visited</span>
       {Object.entries(kinds).map(([k, l]) => <span><i class={`dot ${k}`}></i>{l}</span>)}
+      <span><svg class="sw-star" viewBox="-6 -6 12 12"><path d={starPath(5.5)} /></svg>Favourite spots</span>
     </div>
 
     <div class="map card">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`World map with ${countriesVisited.length} visited countries highlighted`}>
-        <g class="land">
-          {shapes.map((s: any) => <path d={s.d} class:list={{ on: s.on }}><title>{s.name}</title></path>)}
-        </g>
-        <g class="pins">
-          {pins.map((p) => (
-            <g class={`pin ${p.kind}`} data-i={p.i} transform={`translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`}>
-              <circle class="halo" r="11" />
-              <circle class="core" r="4.5" />
-              <title>{p.name}: {p.note}</title>
-            </g>
-          ))}
-        </g>
-      </svg>
+      <div class="map-bar">
+        <button class="back" hidden>← World</button>
+        <span class="hint">Pick a country to see all my favourite spots there</span>
+        <span class="here" hidden></span>
+      </div>
+      <div class="stage">
+        <svg class="world" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`World map with ${countriesVisited.length} visited countries highlighted`}>
+          <g class="land">
+            {shapes.map((s: any) => <path d={s.d} class:list={{ on: s.on, zoom: s.zoom }} data-c={s.zoom ? s.name : undefined}><title>{s.name}</title></path>)}
+          </g>
+          <g class="pins">
+            {pins.map((p) => (
+              <g class={`pin ${p.kind}`} data-i={p.i} transform={`translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`}>
+                <circle class="halo" r="11" />
+                <circle class="core" r="4.5" />
+                <title>{p.name}: {p.note}</title>
+              </g>
+            ))}
+          </g>
+          <g class="stars">
+            {topStars.map((st) => <path class="star" d={starPath(5.5)} transform={`translate(${st.xy[0]} ${st.xy[1]})`} data-n={st.n} data-c={st.c} />)}
+          </g>
+        </svg>
+        {views.map((v) => (
+          <svg class="detail" data-c={v.c} data-fly={v.fly.join(' ')} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Favourite spots in ${v.c}`}>
+            <g class="land" set:html={v.land.map((l: any) => `<path d="${l.d}"${l.home ? ' class="home"' : ''}/>`).join('')} />
+            <g class="stars">{v.dots.map((d) => <path class="star" d={starPath(7)} transform={`translate(${d.xy[0]} ${d.xy[1]})`} data-n={d.n} />)}</g>
+          </svg>
+        ))}
+        <div class="tip" hidden></div>
+      </div>
+      <div class="chips">
+        {starCountries.map((c) => <button class="chip" data-c={c}>{c === 'United States of America' ? 'USA' : c}<span>{byCountry.get(c)!.length}</span></button>)}
+      </div>
     </div>
 
     <div class="grid">
@@ -113,6 +179,79 @@ const kinds = { lived: 'Lived', science: 'Beamtimes & science', travel: 'Travel'
   </script>
 
   <script>
+    const map = document.querySelector<HTMLElement>('.map')!;
+    const worldSvg = map.querySelector<SVGSVGElement>('svg.world')!;
+    const tip = map.querySelector<HTMLElement>('.tip')!;
+    const back = map.querySelector<HTMLButtonElement>('.back')!;
+    const hint = map.querySelector<HTMLElement>('.hint')!;
+    const here = map.querySelector<HTMLElement>('.here')!;
+    const full = [0, 0, 960, 470];
+    let current: string | null = null;
+
+    // Fly the world map's viewBox from one box to another.
+    const fly = (from: number[], to: number[], ms = 650) => new Promise<void>((done) => {
+      const t0 = performance.now();
+      const step = (t: number) => {
+        const k = Math.min(1, (t - t0) / ms), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        worldSvg.setAttribute('viewBox', from.map((v, i) => v + (to[i] - v) * e).join(' '));
+        k < 1 ? requestAnimationFrame(step) : done();
+      };
+      requestAnimationFrame(step);
+    });
+    const fit = (b: number[]) => { // grow the box to the map's aspect ratio
+      const [x, y, w, h] = b, r = 960 / 470;
+      const W = Math.max(w, h * r), H = W / r;
+      return [x + w / 2 - W / 2, y + h / 2 - H / 2, W, H];
+    };
+    const detail = (c: string) => map.querySelector<SVGSVGElement>(`svg.detail[data-c="${CSS.escape(c)}"]`);
+    const chips = map.querySelectorAll<HTMLButtonElement>('.chip');
+
+    async function open(c: string) {
+      const d = detail(c);
+      if (!d || c === current) return;
+      if (current) { detail(current)!.classList.remove('show'); worldSvg.classList.remove('gone'); worldSvg.setAttribute('viewBox', full.join(' ')); }
+      current = c;
+      chips.forEach((b) => b.classList.toggle('on', b.dataset.c === c));
+      hideTip();
+      await fly(full, fit(d.dataset.fly!.split(' ').map(Number)));
+      if (current !== c) return;
+      worldSvg.classList.add('gone');
+      d.classList.add('show');
+      back.hidden = false; hint.hidden = true; here.hidden = false;
+      here.textContent = `${c === 'United States of America' ? 'USA' : c} · ${d.querySelectorAll('.star').length} favourite spots`;
+    }
+    function close() {
+      if (!current) return;
+      detail(current)!.classList.remove('show');
+      worldSvg.classList.remove('gone');
+      const from = worldSvg.getAttribute('viewBox')!.split(' ').map(Number);
+      current = null;
+      chips.forEach((b) => b.classList.remove('on'));
+      back.hidden = true; hint.hidden = false; here.hidden = true;
+      hideTip();
+      fly(from, full, 500);
+    }
+    back.addEventListener('click', close);
+    chips.forEach((b) => b.addEventListener('click', () => (b.dataset.c === current ? close() : open(b.dataset.c!))));
+    worldSvg.querySelectorAll<SVGPathElement>('.land path.zoom').forEach((p) => p.addEventListener('click', () => open(p.dataset.c!)));
+
+    // Name tooltip on stars.
+    const showTip = (el: Element) => {
+      const r = el.getBoundingClientRect(), m = map.querySelector('.stage')!.getBoundingClientRect();
+      tip.textContent = (el as HTMLElement).dataset.n!;
+      tip.hidden = false;
+      tip.style.left = `${r.left + r.width / 2 - m.left}px`;
+      tip.style.top = `${r.top - m.top}px`;
+    };
+    function hideTip() { tip.hidden = true; }
+    map.querySelectorAll('.star').forEach((st) => {
+      st.addEventListener('pointerenter', () => showTip(st));
+      st.addEventListener('pointerleave', hideTip);
+      st.addEventListener('click', (e) => { e.stopPropagation(); showTip(st); });
+    });
+  </script>
+
+  <script>
     const pins = document.querySelectorAll<SVGGElement>('.pin');
     const light = (i: string | undefined, on: boolean) =>
       pins.forEach((p) => p.classList.toggle('hot', on && p.dataset.i === i));
@@ -144,7 +283,37 @@ const kinds = { lived: 'Lived', science: 'Beamtimes & science', travel: 'Travel'
   .dot.travel, .band.travel { background: var(--amber); }
 
   .map { padding: 12px; overflow: hidden; }
+  .map { position: relative; }
+  .map-bar { display: flex; align-items: center; gap: 12px; min-height: 34px; padding: 2px 4px 10px; font-size: 14px; color: var(--ink-mute); }
+  .back { font: inherit; font-weight: 600; color: var(--ink); background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+  .back:hover { border-color: var(--accent); }
+  .here { color: var(--ink); font-weight: 600; }
+  .stage { position: relative; }
   .map svg { display: block; width: 100%; height: auto; }
+  .world { transition: opacity .25s; }
+  .world.gone { opacity: 0; pointer-events: none; }
+  .detail { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .35s; }
+  .detail.show { opacity: 1; pointer-events: auto; }
+  .land path.zoom { cursor: pointer; }
+  .detail .land :global(path) { fill: color-mix(in srgb, var(--ink) 9%, var(--bg-elev)); stroke: var(--bg-elev); stroke-width: 0.8; }
+  .detail .land :global(path.home) { fill: color-mix(in srgb, var(--accent) 30%, var(--bg-soft)); }
+  .star { fill: #f6b400; stroke: color-mix(in srgb, #7a5300 55%, transparent); stroke-width: 0.6; cursor: pointer; transition: transform .15s; }
+  .star:hover { fill: #ffcf33; }
+  .sw-star { width: 14px; height: 14px; }
+  .sw-star path { fill: #f6b400; }
+  .tip { position: absolute; transform: translate(-50%, calc(-100% - 8px)); background: var(--ink); color: var(--bg); font-size: 12.5px; font-weight: 550; padding: 5px 9px; border-radius: 7px; white-space: nowrap; pointer-events: none; z-index: 3; max-width: 260px; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 6px 18px -8px rgba(0,0,0,.5); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 4px 4px; }
+  .chip { font: inherit; font-size: 13.5px; color: var(--ink-soft); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; transition: border-color .2s, background .2s; }
+  .chip span { font-size: 12px; color: var(--ink-mute); }
+  .chip:hover { border-color: #f6b400; }
+  .chip.on { background: #f6b400; border-color: #f6b400; color: #1d1d22; }
+  .chip.on span { color: #1d1d22; }
+  @media (max-width: 640px) {
+    .star { stroke: #f6b400; stroke-width: 4; stroke-linejoin: round; }  /* fatter stars without moving them */
+    .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 6px; }
+    .chip { flex: none; }
+    .hint { font-size: 13px; }
+  }
   .land path { fill: color-mix(in srgb, var(--ink) 12%, var(--bg-elev)); stroke: var(--bg-elev); stroke-width: 0.6; transition: fill .2s; }
   .land path.on { fill: color-mix(in srgb, var(--accent) 45%, var(--bg-soft)); }
   .land path:hover { fill: color-mix(in srgb, var(--ink) 22%, var(--bg-elev)); }
