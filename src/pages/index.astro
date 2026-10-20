@@ -1,51 +1,18 @@
 ---
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
+import SodaStage from '../components/SodaStage.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import PubItem from '../components/PubItem.astro';
 import { profile, stats, news } from '../data/profile';
 import { projects } from '../data/research';
 import { publications } from '../data/publications';
-import { readFileSync } from 'node:fs';
 
 const featured = projects.filter((p) => p.featured);
 const selected = publications.filter((p) => p.first && !p.status).slice(0, 4);
-// Random Japan background: picked at build time by scripts/fetch-japan.mjs.
-// Swap in your own photos later by dropping them in public/japan/ with a manifest.json.
-let japan: { src: string; title: string; artist: string; license: string; page: string }[] = [];
-try { japan = JSON.parse(readFileSync('public/japan/manifest.json', 'utf8')); } catch {}
-const initials = profile.name.split(' ').map((w) => w[0]).join('');
 ---
 <Base>
-  <section class="hero" data-bg={JSON.stringify(japan)}>
-    <div class="bg" aria-hidden="true"></div>
-    <div class="shade" aria-hidden="true"></div>
-    <a class="credit" target="_blank" rel="noopener"></a>
-    <div class="container hero-inner">
-      <div class="who">
-        {profile.photo
-          ? <img class="avatar" src={profile.photo} alt={profile.name} width="132" height="132" />
-          : <div class="avatar ph" aria-hidden="true">{initials}</div>}
-        <div>
-          <h1 class="name">{profile.name.split(' ').map((w) => <span>{w}</span>)}</h1>
-          <span class="role">{profile.role}</span>
-        </div>
-      </div>
-      <p class="pitch">{profile.pitch}</p>
-      <p class="aff"><Icon name="pin" size={16} /> {profile.affiliation}</p>
-      <div class="ctas">
-        <a class="btn primary" href="/research">Explore my research <Icon name="arrow" size={16} /></a>
-        <a class="btn" href={profile.cvPdf}><Icon name="download" size={16} /> CV</a>
-      </div>
-      <div class="socials">
-        {profile.links.github && <a href={profile.links.github}><Icon name="github" /> GitHub</a>}
-        {profile.links.orcid && <a href={profile.links.orcid}><Icon name="orcid" /> ORCID</a>}
-        {profile.links.scholar && <a href={profile.links.scholar}><Icon name="scholar" /> Scholar</a>}
-        <a href={`mailto:${profile.email}`}><Icon name="mail" /> Email</a>
-        {profile.links.cringedin && <a href={profile.links.cringedin} target="_blank" rel="noopener"><Icon name="cringedin" /> CringedIn</a>}
-      </div>
-    </div>
-  </section>
+  <SodaStage />
 
   <section class="container">
     <div class="stats card reveal">
@@ -55,7 +22,7 @@ const initials = profile.name.split(' ').map((w) => w[0]).join('');
     </div>
   </section>
 
-  <section class="section container about">
+  <section class="section container about" id="about">
     <div class="reveal">
       <span class="eyebrow">About</span>
       <h2>Making matter's fastest, smallest motions visible.</h2>
@@ -92,71 +59,8 @@ const initials = profile.name.split(' ').map((w) => w[0]).join('');
   </section>
 </Base>
 
-<script>
-  const hero = document.querySelector<HTMLElement>('.hero')!;
-  const list = JSON.parse(hero.dataset.bg || '[]');
-  if (list.length) {
-    const pick = list[Math.floor(Math.random() * list.length)];
-    const img = new Image();
-    img.onload = () => {
-      const bg = hero.querySelector<HTMLElement>('.bg')!;
-      bg.style.backgroundImage = `url("${img.src}")`;
-      bg.classList.add('on');
-    };
-    img.src = pick.src;
-    const credit = hero.querySelector<HTMLAnchorElement>('.credit')!;
-    credit.href = pick.page;
-    credit.textContent = `${pick.title} · ${pick.artist} · ${pick.license}`;
-  }
-</script>
 
 <style>
-  .hero {
-    position: relative; overflow: hidden; margin-top: -65px; padding: 190px 0 130px;
-    --hero-bg: #3b3c42;
-    --ink: #f6f5f8; --ink-soft: rgba(246, 245, 248, 0.84); --ink-mute: rgba(246, 245, 248, 0.62);
-    --accent: #ffffff; --line: rgba(255, 255, 255, 0.22); --bg-elev: rgba(255, 255, 255, 0.06);
-    color: var(--ink); background: var(--hero-bg);
-  }
-  /* Darken behind the text on the left, then melt the gray into the page below. */
-  .bg { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transform: scale(1.05); transition: opacity 1.4s ease, transform 8s ease-out; }
-  .bg.on { opacity: 1; transform: scale(1); }
-  .shade { position: absolute; inset: 0; pointer-events: none; background:
-      linear-gradient(90deg, rgba(40, 41, 46, 0.82) 0%, rgba(40, 41, 46, 0.55) 45%, rgba(40, 41, 46, 0.1) 100%),
-      linear-gradient(180deg, rgba(40, 41, 46, 0.45) 0%, transparent 22%, transparent 62%, var(--page-bg) 100%); }
-  .credit { position: absolute; right: 16px; bottom: 14px; z-index: 2; font-size: 11.5px; color: rgba(255, 255, 255, 0.6); max-width: 60%; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
-  .credit:hover { color: #fff; }
-  .hero-inner { position: relative; }
-  .who { display: flex; align-items: center; gap: 22px; }
-  .avatar {
-    width: 132px; height: 132px; border-radius: 50%; object-fit: cover; flex: none;
-    border: 3px solid #fff; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
-  }
-  .ph { display: grid; place-items: center; font-family: 'Caveat', cursive; font-size: 52px; color: var(--hero-bg); background: #fff; }
-  .name { font-family: 'Caveat', cursive; font-weight: 600; font-size: 46px; line-height: 0.95; letter-spacing: 0; font-variation-settings: normal; }
-  .name span { display: block; }
-  .role { display: block; margin-top: 6px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-mute); }
-  .pitch {
-    font-family: var(--font-display); font-weight: 400; letter-spacing: -0.015em;
-    font-size: clamp(26px, 3vw, 38px); line-height: 1.18; max-width: 520px; margin: 34px 0 0; color: var(--ink);
-  }
-  .aff { display: flex; align-items: center; gap: 8px; color: var(--ink-mute); font-size: 15px; margin: 20px 0 0; }
-  .ctas { display: flex; gap: 10px; margin-top: 30px; flex-wrap: wrap; }
-  .hero .btn.primary { background: #fff; color: #1d1d22; border-color: #fff; }
-  .hero .btn.primary:hover { background: #e8e8ee; border-color: #e8e8ee; color: #1d1d22; }
-  .hero .btn { backdrop-filter: blur(8px); }
-  .socials { display: flex; gap: 18px; margin-top: 26px; flex-wrap: wrap; }
-  .socials a { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); font-size: 14.5px; font-weight: 500; transition: color .2s; }
-  .socials a:hover { color: #fff; }
-  @media (max-width: 860px) {
-    .hero { padding: 120px 0 110px; }
-    .shade { background:
-      linear-gradient(180deg, rgba(40, 41, 46, 0.7) 0%, rgba(40, 41, 46, 0.55) 55%, var(--page-bg) 100%); }
-    .credit { display: none; }
-    .avatar, .ph { width: 104px; height: 104px; }
-    .name { font-size: 40px; }
-  }
-
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px; }
   .stat { padding: 22px 20px; border-right: 1px solid var(--line); }
   .stat:last-child { border-right: 0; }
