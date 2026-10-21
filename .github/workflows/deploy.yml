@@ -28,6 +28,8 @@ jobs:
       - run: npm ci
       - name: Pick random Japan background photos
         run: node scripts/fetch-japan.mjs
+      - name: Refresh citation numbers from Google Scholar
+        run: node scripts/fetch-scholar.mjs
       - name: Sync home backgrounds from Google Drive
         run: node scripts/fetch-backgrounds.mjs
         env:

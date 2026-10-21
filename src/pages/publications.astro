@@ -2,7 +2,10 @@
 import Base from '../layouts/Base.astro';
 import PubItem from '../components/PubItem.astro';
 import { publications, talks } from '../data/publications';
-import { profile, citations } from '../data/profile';
+import { profile } from '../data/profile';
+import scholar from '../data/scholar.json';
+// Refreshed from Google Scholar on every deploy and daily by scripts/fetch-scholar.mjs.
+const citations = { ...scholar, perYear: scholar.perYear as [number, number][], asOf: new Date(scholar.asOf).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) };
 // Citations-per-year bar chart, drawn at build time.
 const CW = 300, CH = 150, pad = { l: 4, r: 30, t: 8, b: 22 };
 const maxY = Math.ceil(Math.max(...citations.perYear.map(([, n]) => n)) / 25) * 25;
