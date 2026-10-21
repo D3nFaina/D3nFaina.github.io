@@ -30,6 +30,8 @@ jobs:
         run: node scripts/fetch-japan.mjs
       - name: Refresh citation numbers from Google Scholar
         run: node scripts/fetch-scholar.mjs
+        env:
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
       - name: Sync home backgrounds from Google Drive
         run: node scripts/fetch-backgrounds.mjs
         env:
