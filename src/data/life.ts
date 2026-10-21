@@ -22,15 +22,25 @@ export const service = [
 
 // Interests: replace with your own. `emoji` is optional.
 // `img` (in public/interests/) replaces the emoji with a picture.
-export const interests: { title: string; emoji?: string; img?: string; text: string; link?: { href: string; label: string } }[] = [
-  { title: 'Code', img: '/interests/code.jpg', text: 'I enjoy building small tools: analysis pipelines, data viewers, and the occasional side project on GitHub.' },
-  { title: 'Photography', img: '/interests/photography.jpg', text: 'Mostly landscapes from trips and beamtimes in places I would never have seen otherwise.' },
+// `href` makes the whole card a link; `gallery` makes it open those photos (public/food/full + thumb).
+type Pic = { f: string; w: number; h: number; caption: string };
+export const interests: { title: string; emoji?: string; img?: string; text: string; href?: string; gallery?: Pic[]; link?: { href: string; label: string } }[] = [
+  { title: 'Code', img: '/interests/code.jpg', href: '/projects/', text: 'I enjoy building small tools: analysis pipelines, data viewers, and the occasional side project on GitHub.' },
+  { title: 'Photography', img: '/interests/photography.jpg', href: '/travels/#photographs', text: 'Mostly landscapes from trips and beamtimes in places I would never have seen otherwise.' },
   {
     title: 'Finance', img: '/interests/finance.jpg',
     text: 'Markets are another noisy time series, so I treat them like data: long-run returns, cycles and the odd backtest. My Bitcoin Cycle Planner turns a halving-cycle strategy into a concrete buy and exit plan, and comes with price history since 2011.',
     link: { href: 'https://github.com/D3nFaina/btc-cycle-planner', label: 'Bitcoin Cycle Planner on GitHub' },
   },
-  { title: 'Food', img: '/interests/food.jpg', text: 'Italian by birth, so this one is not optional.' },
+  {
+    title: 'Food', img: '/interests/food.jpg', text: 'Italian by birth, so this one is not optional.',
+    // From Drive Website_images/Food.
+    gallery: [
+      { f: 'food-1', w: 480, h: 640, caption: 'Yakitori in Japan' },
+      { f: 'food-2', w: 512, h: 640, caption: 'Pasta served in a pizza crust' },
+      { f: 'food-3', w: 640, h: 595, caption: 'Gnocchi served in a pizza crust' },
+    ],
+  },
 ];
 
 // Countries you have visited, spelled as in the world map data (e.g. 'United States of America').
