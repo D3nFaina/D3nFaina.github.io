@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import { geoNaturalEarth1, geoPath, geoGraticule } from 'd3-geo';
 import { feature } from 'topojson-client';
 import world from 'world-atlas/countries-110m.json';
-import { places, countriesVisited } from '../data/life';
+import { places, countriesVisited, upcoming } from '../data/life';
 import photos from '../data/photos.json';
 import { stars, byCountry, starCountries, frame, slug } from '../lib/stars';
 
@@ -20,13 +20,14 @@ const path = geoPath(projection);
 const visitedList = [...new Set([...countriesVisited, ...starCountries])];
 const visited = new Set(visitedList);
 
+const soon = new Set(upcoming.map((u) => u.country));
 const shapes = countries.map((f: any) => ({
   d: path(f) ?? '', name: f.properties.name as string,
-  on: visited.has(f.properties.name), can: byCountry.has(f.properties.name),
+  on: visited.has(f.properties.name), can: byCountry.has(f.properties.name), up: soon.has(f.properties.name),
 }));
 const sea = path({ type: 'Sphere' } as any) ?? '';
 const grat = path(geoGraticule().step([15, 15])()) ?? '';
-const pins = places.map((p, i) => {
+const pins = [...places, ...upcoming.map((u) => ({ ...u, kind: 'upcoming' as const, note: `${u.when}: ${u.note}` }))].map((p, i) => {
   const [x, y] = projection([p.lng, p.lat]) ?? [0, 0];
   return { ...p, x, y, i };
 });
@@ -71,9 +72,23 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
       <div class="count"><div class="n">{photoCount}</div><div class="t">photos from the road</div></div>
     </div>
 
+    <section class="soon card reveal" aria-labelledby="up-h">
+      <h2 id="up-h"><i class="dot upcoming"></i>Upcoming</h2>
+      <ol>
+        {upcoming.map((u) => (
+          <li>
+            <span class="when">{u.when}</span>
+            <span class="what"><b>{u.name}</b><span class="k">{u.kind === 'beamtime' ? 'Beamtime' : 'Travel'} · {u.country}</span></span>
+            <span class="nt">{u.note}{u.link && <> · <a href={u.link}>read more</a></>}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+
     <div class="legend">
       <span><i class="sw visited"></i>Visited (in colour)</span><span><i class="sw faded"></i>Not yet</span>
       {Object.entries(kinds).map(([k, l]) => <span><i class={`dot ${k}`}></i>{l}</span>)}
+      <span><i class="dot upcoming"></i>Upcoming</span>
       <span><svg class="sw-star" viewBox="-6 -6 12 12"><path d={starPath(5.5)} /></svg>Favourite spots</span>
     </div>
 
@@ -92,7 +107,7 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
           <path class="landbase" d={shapes.map((s: any) => s.d).join('')} />
           <g class="biomes" clip-path="url(#world-land)"></g>
           <g class="land">
-            {shapes.map((s: any) => <path d={s.d} class:list={{ on: s.on, can: s.can }} data-c={s.name}><title>{s.name}</title></path>)}
+            {shapes.map((s: any) => <path d={s.d} class:list={{ on: s.on, can: s.can, up: s.up }} data-c={s.name}><title>{s.name}</title></path>)}
           </g>
           <g class="marks">
             <g class="pins">
@@ -564,7 +579,8 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
   .biome-key span { display: inline-flex; align-items: center; gap: 6px; }
   .biome-key i { width: 11px; height: 11px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--line); }
   .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-  .dot.lived, .band.lived { background: var(--violet); }
+  .dot.lived, .band.lived { background: var(--rose); }
+  .dot.upcoming { background: var(--violet); }
   .dot.science, .band.science { background: var(--cyan); }
   .dot.travel, .band.travel { background: var(--amber); }
 
@@ -613,7 +629,21 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
   .world.flying .marks { opacity: 0; }
   .pin .core { stroke: var(--bg-elev); stroke-width: 1.5; }
   .pin .halo { opacity: 0; transition: opacity .2s; }
-  .pin.lived .core, .pin.lived .halo { fill: var(--violet); }
+  .pin.lived .core, .pin.lived .halo { fill: var(--rose); }
+  .pin.upcoming .core, .pin.upcoming .halo { fill: var(--violet); }
+  .pin.upcoming .core { stroke: #fff; stroke-width: 1.2; }
+  .map :global(.world .land path.up) { fill: rgba(124, 92, 255, 0.38); stroke: var(--violet); stroke-width: 1.4; }
+  .soon { padding: 22px 26px; margin: 0 0 22px; border-color: rgba(124, 92, 255, 0.45); background: linear-gradient(135deg, rgba(124, 92, 255, 0.10), transparent 70%), var(--bg-elev); }
+  .soon h2 { display: flex; align-items: center; gap: 10px; font-size: 22px; margin: 0 0 12px; }
+  .soon ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .soon li { display: grid; grid-template-columns: 130px 210px 1fr; gap: 14px; align-items: baseline; padding-top: 10px; border-top: 1px solid var(--line); }
+  .soon li:first-child { border-top: 0; padding-top: 0; }
+  .soon .when { font-weight: 600; color: var(--violet); }
+  .soon .what { display: flex; flex-direction: column; }
+  .soon .k { font-size: 12.5px; color: var(--ink-mute); }
+  .soon .nt { color: var(--ink-soft); }
+  .soon a { color: var(--violet); font-weight: 600; }
+  @media (max-width: 700px) { .soon li { grid-template-columns: 1fr; gap: 2px; } }
   .pin.science .core, .pin.science .halo { fill: var(--cyan); }
   .pin.travel .core, .pin.travel .halo { fill: var(--amber); }
   .pin.hot .halo, .pin:hover .halo { opacity: 0.35; }

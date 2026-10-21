@@ -37,7 +37,15 @@ export const interests: { title: string; emoji?: string; img?: string; text: str
 // The Travels page counts them and shades them on the map.
 export const countriesVisited = [
   'Italy', 'Switzerland', 'Japan', 'Germany', 'United States of America',
-  'China', 'Spain', 'Morocco', 'Philippines', 'Vietnam', 'Portugal',
+  'China', 'Spain', 'Morocco', 'Philippines', 'Vietnam', 'Portugal', 'United Arab Emirates',
+];
+
+// Trips and beamtimes still to come: shown in violet on the Travels map and in its Upcoming box.
+// `country` uses the world map names; move an entry into `places` once it has happened.
+export const upcoming: { name: string; country: string; lat: number; lng: number; when: string; kind: 'beamtime' | 'travel'; note: string; link?: string }[] = [
+  { name: 'SACLA, Harima', country: 'Japan', lat: 34.95, lng: 134.43, when: 'February 2027', kind: 'beamtime', note: 'Hard-XFEL pump, UV probe: how ionized water and cysteine respond in the first 200 fs', link: '/notes/sacla-2027-cysteine/' },
+  { name: 'Thailand', country: 'Thailand', lat: 13.75, lng: 100.5, when: 'March 2027', kind: 'travel', note: 'Holiday' },
+  { name: 'PAL-XFEL, Pohang', country: 'South Korea', lat: 36.01, lng: 129.32, when: 'May 2027', kind: 'beamtime', note: 'Commissioning a dedicated X-ray transient grating chamber at the oxygen K edge', link: '/notes/pal-xfel-2027-xtg/' },
 ];
 
 type Photo = { src: string; caption: string };
@@ -88,6 +96,14 @@ export const places: { name: string; country: string; lat: number; lng: number; 
       { src: '/travels/full/20261003_134317.jpg', caption: 'Black-pebble beach at Seixal' },
       { src: '/travels/full/20261002_110658.jpg', caption: 'Bananas, of course' },
       { src: '/travels/full/20261004_140037.jpg', caption: 'Bolo do caco at the Risco waterfall' },
+    ],
+  },
+  {
+    name: 'Abu Dhabi & Dubai', album: 'uae-2026', country: 'United Arab Emirates', lat: 24.41, lng: 54.47, kind: 'travel', note: 'The Sheikh Zayed Grand Mosque and the Dubai skyline', year: '2026',
+    photos: [
+      { src: '/travels/full/20260429_100335.jpg', caption: 'Sheikh Zayed Grand Mosque' },
+      { src: '/travels/full/20260429_095052.jpg', caption: 'The mosque colonnade' },
+      { src: '/travels/full/20260430_100823.jpg', caption: 'Dubai Marina from the beach' },
     ],
   },
   { name: 'Spain', country: 'Spain', lat: 40.42, lng: -3.7, kind: 'travel', note: 'Trip to Spain', year: '2023' },
