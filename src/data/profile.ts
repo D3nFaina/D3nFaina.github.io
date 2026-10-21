@@ -18,7 +18,7 @@ export const profile = {
   links: {
     github: 'https://github.com/D3nFaina',
     orcid: 'https://orcid.org/0000-0001-7380-8324',
-    scholar: '', // e.g. 'https://scholar.google.com/citations?user=XXXX'
+    scholar: 'https://scholar.google.com/citations?user=rOEzuyEAAAAJ',
     linkedin: '',
     cringedin: 'https://cringedin.link/', // shown as a crossed-out LinkedIn logo
   },
@@ -39,3 +39,10 @@ export const news = [
   { date: '2024', text: 'Stimulated Brillouin scattering at 1 nm⁻¹ wave vector published in Physical Review Letters.' },
   { date: '2024', text: 'Joined the University of Bern as Advanced Postdoctoral Researcher.' },
 ];
+
+// Citation numbers copied by hand from Google Scholar (Scholar blocks automated reads). Update `asOf` with them.
+export const citations = {
+  asOf: 'October 2026',
+  total: 343, h: 10, i10: 10,
+  perYear: [[2019, 6], [2020, 11], [2021, 17], [2022, 15], [2023, 46], [2024, 71], [2025, 84], [2026, 93]] as [number, number][],
+};

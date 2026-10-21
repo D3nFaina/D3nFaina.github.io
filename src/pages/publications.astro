@@ -2,12 +2,19 @@
 import Base from '../layouts/Base.astro';
 import PubItem from '../components/PubItem.astro';
 import { publications, talks } from '../data/publications';
-import { profile } from '../data/profile';
+import { profile, citations } from '../data/profile';
+// Citations-per-year bar chart, drawn at build time.
+const CW = 300, CH = 150, pad = { l: 4, r: 30, t: 8, b: 22 };
+const maxY = Math.ceil(Math.max(...citations.perYear.map(([, n]) => n)) / 25) * 25;
+const bw = (CW - pad.l - pad.r) / citations.perYear.length;
+const yOf = (v: number) => pad.t + (CH - pad.t - pad.b) * (1 - v / maxY);
+const ticks = Array.from({ length: maxY / 25 + 1 }, (_, i) => i * 25);
 const years = [...new Set(publications.map((p) => p.year))].sort((a, b) => b - a);
 const firstCount = publications.filter((p) => p.first).length;
 ---
 <Base title="Publications" description="Peer-reviewed publications and talks.">
-  <header class="container page-head">
+  <header class="container page-head head">
+    <div>
     <span class="eyebrow">Publications & talks</span>
     <h1>Publications</h1>
     <p>{publications.length} papers, {firstCount} as first author. The full, always-current list is on <a href={profile.links.orcid}>ORCID</a>{profile.links.scholar && <> and <a href={profile.links.scholar}>Google Scholar</a></>}.</p>
@@ -15,6 +22,25 @@ const firstCount = publications.filter((p) => p.first).length;
       <button class="f on" data-f="all">All</button>
       <button class="f" data-f="first">First author</button>
     </div>
+    </div>
+    <a class="cites card" href={profile.links.scholar} aria-label={`Google Scholar: ${citations.total} citations, h-index ${citations.h}`}>
+      <div class="ct">Cited by</div>
+      <div class="nums">
+        <div><b>{citations.total}</b><span>citations</span></div>
+        <div><b>{citations.h}</b><span>h-index</span></div>
+        <div><b>{citations.i10}</b><span>i10-index</span></div>
+      </div>
+      <svg viewBox={`0 0 ${CW} ${CH}`} role="img" aria-label="Citations per year">
+        {ticks.map((t) => <g><line class="gl" x1={pad.l} x2={CW - pad.r} y1={yOf(t)} y2={yOf(t)} /><text class="yt" x={CW - pad.r + 6} y={yOf(t) + 3.5}>{t}</text></g>)}
+        {citations.perYear.map(([y, n], i) => (
+          <g class="bar">
+            <rect x={pad.l + i * bw + bw * 0.18} y={yOf(n)} width={bw * 0.64} height={yOf(0) - yOf(n)} rx="2.5"><title>{y}: {n} citations</title></rect>
+            <text class="xt" x={pad.l + i * bw + bw / 2} y={CH - 6}>{String(y).slice(2)}</text>
+          </g>
+        ))}
+      </svg>
+      <div class="src">Google Scholar · {citations.asOf}</div>
+    </a>
   </header>
 
   <div class="container list">
@@ -49,6 +75,21 @@ const firstCount = publications.filter((p) => p.first).length;
   }));
 </script>
 <style>
+  .head { display: grid; grid-template-columns: 1fr 320px; gap: 40px; align-items: end; }
+  .cites { display: block; padding: 18px 18px 12px; color: inherit; transition: border-color .2s, transform .2s; }
+  .cites:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .ct { font-size: 12.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mute); }
+  .nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0 12px; }
+  .nums b { display: block; font-family: var(--font-display); font-size: 28px; font-weight: 500; line-height: 1; }
+  .nums span { font-size: 12.5px; color: var(--ink-mute); }
+  .cites svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .gl { stroke: var(--line); stroke-width: 1; }
+  .yt, .xt { font-size: 10px; fill: var(--ink-mute); font-family: inherit; }
+  .xt { text-anchor: middle; }
+  .bar rect { fill: var(--accent); opacity: 0.78; transition: opacity .2s; }
+  .bar:hover rect { opacity: 1; }
+  .src { font-size: 11.5px; color: var(--ink-mute); text-align: right; margin-top: 4px; }
+  @media (max-width: 860px) { .head { grid-template-columns: 1fr; gap: 28px; } .cites { max-width: 360px; } }
   .filters { display: inline-flex; gap: 4px; padding: 4px; margin-top: 26px; border-radius: 999px; background: var(--bg-soft); border: 1px solid var(--line); }
   .f { border: 0; background: transparent; color: var(--ink-soft); font: inherit; font-size: 14.5px; font-weight: 550; padding: 8px 16px; border-radius: 999px; cursor: pointer; }
   .f.on { background: var(--bg-elev); color: var(--ink); box-shadow: var(--shadow); }
