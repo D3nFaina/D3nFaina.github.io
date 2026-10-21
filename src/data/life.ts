@@ -36,9 +36,20 @@ export const interests: { title: string; emoji?: string; img?: string; text: str
     title: 'Food', img: '/interests/food.jpg', text: 'Italian by birth, so this one is not optional.',
     // From Drive Website_images/Food.
     gallery: [
-      { f: 'food-1', w: 480, h: 640, caption: 'Yakitori in Japan' },
-      { f: 'food-2', w: 512, h: 640, caption: 'Pasta served in a pizza crust' },
-      { f: 'food-3', w: 640, h: 595, caption: 'Gnocchi served in a pizza crust' },
+      { f: 'food-20250930_212417', w: 480, h: 640, caption: 'Yakitori in Japan' },
+      { f: 'food-20250929_113230', w: 480, h: 640, caption: 'Katsu curry' },
+      { f: 'food-20250928_085834', w: 480, h: 640, caption: 'Tonkotsu ramen at nine in the morning' },
+      { f: 'food-20250223_213010', w: 480, h: 640, caption: 'Tonkotsu ramen and a cold beer' },
+      { f: 'food-20250222_152258', w: 480, h: 640, caption: 'Matcha latte' },
+      { f: 'food-20250214_130108', w: 640, h: 480, caption: 'Tuna sushi, from lean to fatty' },
+      { f: 'food-20241013_133420', w: 480, h: 640, caption: 'Pulled-pork burger and loaded fries' },
+      { f: 'food-20241013_133310', w: 480, h: 640, caption: 'Loaded fries' },
+      { f: 'food-20241001_140011', w: 480, h: 640, caption: 'Coffee on a terrace' },
+      { f: 'food-20240219_194346', w: 480, h: 640, caption: 'Hamburg steak on a sizzling plate' },
+      { f: 'food-20220907_160345', w: 480, h: 640, caption: 'Lunch above the rice terraces' },
+      { f: 'food-fb-1575493995730', w: 640, h: 595, caption: 'Gnocchi served in a pizza crust' },
+      { f: 'food-fb-1573158780059', w: 512, h: 640, caption: 'Pasta served in a pizza crust' },
+      { f: 'food-20190814_124616', w: 480, h: 640, caption: 'Pasta in a bread cone' },
     ],
   },
 ];

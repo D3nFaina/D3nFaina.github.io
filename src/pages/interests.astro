@@ -95,6 +95,11 @@ import { interests } from '../data/life';
   .nav { position: absolute; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; border-radius: 50%; border: 0; background: rgba(255,255,255,.14); color: #fff; font-size: 28px; cursor: pointer; }
   .nav:hover { background: rgba(255,255,255,.28); }
   .prev { left: -60px; } .next { right: -60px; }
-  @media (max-width: 900px) { .prev { left: 8px; } .next { right: 8px; } }
+  @media (max-width: 900px) {
+    .prev { left: 8px; } .next { right: 8px; }
+    .big img { max-height: 64vh; }
+    .thumbs { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding-bottom: 4px; }
+    .th { flex: none; } .th img { height: 56px; }
+  }
   @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
 </style>
