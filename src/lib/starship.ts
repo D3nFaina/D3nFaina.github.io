@@ -9,8 +9,8 @@ import * as THREE from 'three';
 export type Site = { n: THREE.Vector3; e: THREE.Vector3 }; // unit "up" at the site and unit east
 export type Stage = 'sep' | 'catch' | 'boom' | 'coast' | 'done';
 
-// 1 m of rocket in globe radii: 123 m of stack become 0.3.
-const M = 0.3 / 123;
+// 1 m of rocket in globe radii: 123 m of stack become 0.5.
+const M = 0.5 / 123;
 const RAD = 4.5 * M, BOOSTER = 71 * M, SHIP = 52 * M, TOWER = 146 * M, ARMS = 118 * M;
 const PAD = { k: 22 * M };                 // launch mount sits this far north of the tower
 const IGN = 1.6, SEP = IGN + 8, CATCH = SEP + 9.5, END = SEP + 12;
@@ -115,6 +115,17 @@ function tower() {
   });
 }
 
+// One launch in three blows up: a shuffled bag of three outcomes, kept per visitor so a streak
+// of good luck can't hide the explosion.
+function nextIsBoom() {
+  let bag: boolean[] = [];
+  try { bag = JSON.parse(localStorage.getItem('starship-bag') || '[]'); } catch {}
+  if (!Array.isArray(bag) || !bag.length) bag = [true, false, false].sort(() => Math.random() - 0.5);
+  const b = !!bag.shift();
+  try { localStorage.setItem('starship-bag', JSON.stringify(bag)); } catch {}
+  return b;
+}
+
 export function makeStarship(scene: THREE.Scene) {
   const booster = superHeavy(), shipG = ship(), pad = tower();
   const bPlume = plume(40 * M, RAD * 0.9), sPlume = plume(22 * M, RAD * 0.55);
@@ -125,7 +136,7 @@ export function makeStarship(scene: THREE.Scene) {
   // Smoke, exhaust trail and fireball puffs: a pool of soft sprites in site coordinates.
   type Puff = { s: THREE.Sprite; u: number; d: number; k: number; vu: number; vd: number; vk: number; born: number; life: number; size: number; grow: number; op: number };
   const puffs: Puff[] = [];
-  for (let i = 0; i < 160; i++) {
+  for (let i = 0; i < 420; i++) {
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: soft, transparent: true, depthWrite: false }));
     s.visible = false; all.add(s);
     puffs.push({ s, u: 0, d: 0, k: 0, vu: 0, vd: 0, vk: 0, born: -1, life: 1, size: 0, grow: 0, op: 0 });
@@ -150,16 +161,17 @@ export function makeStarship(scene: THREE.Scene) {
   const ascV = (tau: number) => ({ u: 0.012 * tau, d: 0.00096 * tau * tau });
 
   let site: (() => Site | null) | null = null, t0 = 0, cb: ((s: Stage) => void) | undefined;
-  let fired = new Set<Stage>(), boom = false, last = 0;
+  let fired = new Set<Stage>(), boom = false, last = 0, boomFlash = -1;
   const once = (s: Stage) => { if (!fired.has(s)) { fired.add(s); cb?.(s); } };
 
   const api = {
     active: false,
     go(s: () => Site | null, on?: (s: Stage) => void) {
       site = s; cb = on; t0 = performance.now(); last = t0; fired = new Set(); api.active = true; all.visible = true;
-      boom = Math.random() < 0.35;
+      boom = nextIsBoom();
       for (const p of puffs) { p.born = -1; p.s.visible = false; }
       for (const d of debris) d.m.visible = false;
+      boomFlash = -1;
       shipG.visible = booster.visible = true; pad.close(0);
     },
     update(now: number) {
@@ -206,14 +218,16 @@ export function makeStarship(scene: THREE.Scene) {
         const tau = tauS + s, p = asc(tau), v = ascV(tau), extra = 0.012 * s * s;
         const sp = { u: 6 * M + p.u + BOOSTER + extra * 0.5, d: p.d + extra };
         const sdir = dirOf(v.u + 0.004 * s, v.d + 0.02 * s);
-        const BOOM_AT = 3.2;
+        const BOOM_AT = 2.4;
         if (boom && s > BOOM_AT) {
           if (shipG.visible) {
             shipG.visible = false; once('boom');
-            for (let i = 0; i < 26; i++) {
-              const a = Math.random() * Math.PI * 2, b = (Math.random() - 0.5) * Math.PI, r = 0.02 + Math.random() * 0.05;
-              puff({ u: sp.u, d: sp.d, vu: Math.sin(b) * r, vd: Math.cos(a) * Math.cos(b) * r + 0.02, vk: Math.sin(a) * Math.cos(b) * r, life: 0.8 + Math.random() * 0.9, size: 0.02, grow: 0.09, op: 1 }, now, i % 4 ? 0xff8a2a : 0xfff0b0, true);
+            for (let i = 0; i < 40; i++) {
+              const a = Math.random() * Math.PI * 2, b = (Math.random() - 0.5) * Math.PI, r = 0.03 + Math.random() * 0.08;
+              puff({ u: sp.u, d: sp.d, vu: Math.sin(b) * r, vd: Math.cos(a) * Math.cos(b) * r + 0.02, vk: Math.sin(a) * Math.cos(b) * r, life: 1 + Math.random() * 1.2, size: 0.05, grow: 0.26, op: 0.95 }, now, i % 3 ? 0xff7a1a : 0xffd23a);
             }
+            for (let i = 0; i < 18; i++) puff({ u: sp.u, d: sp.d, vu: (Math.random() - 0.5) * 0.04, vd: (Math.random() - 0.3) * 0.04, vk: (Math.random() - 0.5) * 0.04, life: 3, size: 0.03, grow: 0.12, op: 0.55 }, now, 0x55575d);
+            boomFlash = now;
             for (const d of debris) {
               Object.assign(d, { u: sp.u, d: sp.d, k: 0, vu: (Math.random() - 0.3) * 0.08, vd: 0.03 + (Math.random() - 0.5) * 0.08, vk: (Math.random() - 0.5) * 0.08 });
               d.spin.set(Math.random() * 6, Math.random() * 6, Math.random() * 6); d.m.visible = true;
@@ -258,8 +272,13 @@ export function makeStarship(scene: THREE.Scene) {
         bPlume.set(power > 0, power, pos.u);
         fade(booster, endFade);
 
-        flash.visible = s < 0.9;
-        if (flash.visible) {
+        const fb = boomFlash > 0 ? (now - boomFlash) / 700 : 2;
+        flash.visible = s < 0.9 || fb < 1;
+        flash.material.blending = fb < 1 ? THREE.NormalBlending : THREE.AdditiveBlending;
+        flash.material.color.setHex(fb < 1 ? 0xffb347 : 0xffd08a);
+        if (fb < 1) {
+          flash.position.copy(world(sp.u, sp.d)); flash.scale.setScalar(0.1 + 0.45 * fb); flash.material.opacity = 1 - fb;
+        } else if (flash.visible) {
           flash.position.copy(world(sep.u + BOOSTER, sep.d));
           const f = s / 0.9; flash.scale.setScalar(0.05 + 0.22 * f); flash.material.opacity = 1 - f;
         }

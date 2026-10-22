@@ -96,7 +96,7 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
       data-pins={JSON.stringify(pins.map((p) => [p.lng, p.lat]))} data-top={JSON.stringify(topStars.map((s) => [s.o, s.a]))}>
       <div class="map-bar">
         <button class="back" hidden>← World</button>
-        <span class="hint">Click a country (or pick one below) to see all my favourite spots there</span>
+        <span class="hint">Click a country (or pick one from the list below the map) to see all my favourite spots there</span>
         <span class="here" hidden></span>
         <button class="launch" type="button" hidden title="Starship from Starbase, Boca Chica">🚀 Launch Starship</button>
       </div>
@@ -137,9 +137,12 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
         {[['desert', 'Desert'], ['dry', 'Steppe & savanna'], ['grass', 'Grassland & farmland'], ['forest', 'Forest'], ['jungle', 'Rainforest'], ['cold', 'Snow & tundra'], ['ice', 'Ice']].map(([k, l]) => <span><i style={`background: var(--${k})`}></i>{l}</span>)}
       </div>
       <div class="strip" hidden></div>
-      <div class="chips">
+      <details class="pick">
+        <summary><span class="pick-label">Pick a country</span> <span class="pick-n">{chipList.length} with favourite spots</span></summary>
+        <div class="chips">
         {chipList.map((c) => <button class="chip" data-c={c} data-slug={slug(c)} data-box={JSON.stringify(frame(c).box)}>{label(c)}<span>{byCountry.get(c)!.length}</span></button>)}
-      </div>
+        </div>
+      </details>
     </div>
 
     <div class="grid">
@@ -232,6 +235,7 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
     const proj = map.querySelector<HTMLElement>('.proj')!;
     const strip = map.querySelector<HTMLElement>('.strip')!;
     const chips = [...map.querySelectorAll<HTMLButtonElement>('.chip')];
+    const picker = map.querySelector<HTMLDetailsElement>('.pick')!, pickLabel = picker.querySelector<HTMLElement>('.pick-label')!;
     const albums: Record<string, { name: string; year?: string; pics: { f: string; caption: string }[] }[]> = JSON.parse(map.dataset.albums!);
     const pinLL: [number, number][] = JSON.parse(map.dataset.pins!);
     const topLL: [number, number][] = JSON.parse(map.dataset.top!);
@@ -657,6 +661,7 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
       const first = !current;
       current = c;
       chips.forEach((b) => b.classList.toggle('on', b.dataset.c === c));
+      picker.open = false; pickLabel.textContent = chipOf(c).firstChild!.textContent!;
       hideTip();
       const data = load(c);
       if (first) {
@@ -689,6 +694,7 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
       worldSvg.classList.remove('gone');
       proj.hidden = false; strip.hidden = true;
       chips.forEach((b) => b.classList.remove('on'));
+      pickLabel.textContent = 'Pick a country';
       back.hidden = true; hint.hidden = false; here.hidden = true;
       hideTip();
       const from = worldSvg.getAttribute('viewBox')!.split(' ').map(Number);
@@ -891,7 +897,16 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
   .strip :global(.photo) { flex: none; width: auto; border-radius: 10px; }
   .strip :global(.photo img) { height: 92px; width: auto; }
 
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 4px 4px; }
+  /* Countries as a drop-down under the map. */
+  .pick { margin: 12px 4px 2px; }
+  .pick summary { list-style: none; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;
+    font-size: 14px; font-weight: 600; color: var(--ink); background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; }
+  .pick summary::-webkit-details-marker { display: none; }
+  .pick summary::after { content: ''; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform .2s; }
+  .pick[open] summary::after { transform: translateY(2px) rotate(-135deg); }
+  .pick summary:hover { border-color: #f6b400; }
+  .pick-n { font-weight: 450; color: var(--ink-mute); font-size: 13px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 0 4px; max-height: 210px; overflow-y: auto; }
   .chip { font: inherit; font-size: 13.5px; color: var(--ink-soft); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; transition: border-color .2s, background .2s; }
   .chip span { font-size: 12px; color: var(--ink-mute); }
   .chip:hover { border-color: #f6b400; }
@@ -899,8 +914,7 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
   .chip.on span { color: #1d1d22; }
   @media (max-width: 640px) {
     .star, .detail :global(.star) { stroke: #f6b400; stroke-width: 4; stroke-linejoin: round; } /* fatter stars without moving them */
-    .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 6px; }
-    .chip { flex: none; }
+    .pick-n { display: none; }
     .hint { font-size: 13px; }
   }
 
