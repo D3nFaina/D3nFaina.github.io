@@ -3,6 +3,7 @@
 // An invisible sphere of the same radius writes depth only, so the far half of the orbit
 // disappears behind whatever the page draws there.
 import * as THREE from 'three';
+import { makeStarship, type Site } from './starship';
 
 export type OrbitGeom = { w: number; h: number; cx: number; cy: number; R: number };
 export type OrbitOpts = {
@@ -12,6 +13,7 @@ export type OrbitOpts = {
   T?: number;      // period, seconds
   size?: number;   // ship radius, in sphere radii
   ph?: number;     // starting phase, radians
+  wander?: boolean; // drift to a new random orbit every lap
   onFrame?: (p: { x: number; y: number; r: number; front: boolean }) => void; // after each frame
 };
 
@@ -83,7 +85,7 @@ function buildShip(crewUrl: string) {
 }
 
 export function mountSaucer(canvas: HTMLCanvasElement, geom: () => OrbitGeom, opts: OrbitOpts = {}) {
-  const { a = 1.35, incl = 72, tilt = -14, T = 14, size = 0.26, ph = 0 } = opts;
+  const { a: a0 = 1.35, incl = 72, tilt = -14, T = 14, size = 0.26, ph = 0, wander = false } = opts;
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   const scene = new THREE.Scene();
@@ -98,7 +100,12 @@ export function mountSaucer(canvas: HTMLCanvasElement, geom: () => OrbitGeom, op
   const ship = buildShip(crewUrl);
   // Orbit plane: start flat (xz), lean it towards the viewer, then tilt it in the picture.
   const orbit = new THREE.Group(); scene.add(orbit); orbit.add(ship);
-  orbit.rotation.set(((90 - incl) * Math.PI) / 180, 0, (tilt * Math.PI) / 180);
+  // The orbit's shape, eased towards a new random target every lap when wandering.
+  const cur = { incl, tilt, a: a0 }, tgt = { ...cur };
+  let lap = 0, lastT = 0, a = a0;
+  const setOrbit = () => orbit.rotation.set(((90 - cur.incl) * Math.PI) / 180, 0, (cur.tilt * Math.PI) / 180, 'ZXY');
+  setOrbit();
+  const rocket = makeStarship(scene);
 
   let g = geom();
   const resize = () => {
@@ -118,6 +125,12 @@ export function mountSaucer(canvas: HTMLCanvasElement, geom: () => OrbitGeom, op
   let phase = ph;           // shifted when the ship is let go, so the orbit resumes from there
   let held: THREE.Vector3 | null = null, back = 0, from = new THREE.Vector3();
   const place = (t: number) => {
+    const dt = Math.min(0.1, (t - (lastT || t)) / 1000); lastT = t;
+    if (wander) {
+      const k = 1 - Math.exp(-dt * 0.45);
+      for (const key of ['incl', 'tilt', 'a'] as const) cur[key] += (tgt[key] - cur[key]) * k;
+      a = cur.a; setOrbit();
+    }
     if (held) {
       // Dangling from the cursor: hold position, shake a little.
       ship.position.lerp(held, 0.35);
@@ -125,6 +138,13 @@ export function mountSaucer(canvas: HTMLCanvasElement, geom: () => OrbitGeom, op
       return;
     }
     const th = (t / 1000) * (2 * Math.PI / T) + phase;
+    const n = Math.floor(th / (2 * Math.PI));
+    if (wander && n !== lap) {
+      lap = n;
+      tgt.incl = 50 + Math.random() * 38;       // from steep to nearly edge-on
+      tgt.tilt = -40 + Math.random() * 80;
+      tgt.a = 1.18 + Math.random() * 0.4;
+    }
     // Counter-clockwise seen from above; the ship's nose (+z) points along its motion.
     const on = new THREE.Vector3(a * Math.cos(th), 0.03 * Math.sin(t / 500), -a * Math.sin(th));
     const fwd = new THREE.Vector3(-Math.sin(th), 0, -Math.cos(th));
@@ -147,15 +167,17 @@ export function mountSaucer(canvas: HTMLCanvasElement, geom: () => OrbitGeom, op
   let raf = 0, alive = true;
   const frame = (t: number) => {
     if (!alive) return;
-    place(t); renderer.render(scene, cam);
+    place(t); rocket.update(t); renderer.render(scene, cam);
     opts.onFrame?.(screen());
-    if (!still || held || back > t) raf = requestAnimationFrame(frame);
+    if (!still || held || back > t || rocket.active) raf = requestAnimationFrame(frame);
   };
   const start = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); };
   const stop = () => { cancelAnimationFrame(raf); raf = 0; };
   start();
   return {
     resize: () => { resize(); if (still) start(); }, start, stop, screen,
+    // Starship from a launch site; resolves at booster separation and again when it is over.
+    launch: (site: () => Site | null, on?: (stage: 'sep' | 'done') => void) => { rocket.go(site, on); start(); },
     destroy: () => { alive = false; stop(); renderer.dispose(); },
     // Grab with the cursor: true when (x, y) is on the ship.
     grab: (x: number, y: number) => {

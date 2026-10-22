@@ -98,6 +98,7 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
         <button class="back" hidden>← World</button>
         <span class="hint">Click a country (or pick one below) to see all my favourite spots there</span>
         <span class="here" hidden></span>
+        <button class="launch" type="button" hidden title="Starship from Starbase, Boca Chica">🚀 Launch Starship</button>
       </div>
       <div class="stage">
         <svg class="world" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`World map with ${visitedList.length} visited countries highlighted`}>
@@ -212,7 +213,7 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
 
   <script>
     import {
-      geoNaturalEarth1, geoMercator, geoEqualEarth, geoOrthographic, geoPath, geoGraticule, geoInterpolate,
+      geoNaturalEarth1, geoMercator, geoEqualEarth, geoOrthographic, geoPath, geoGraticule, geoInterpolate, geoRotation,
       type GeoProjection,
     } from 'd3-geo';
     // @ts-ignore: no bundled types
@@ -363,70 +364,132 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
     // In globe view, Rick's saucer orbits the Earth (three.js, loaded only when needed). Every so
     // often Rick or Morty says something, and grabbing the ship makes Rick complain.
     const stageEl = map.querySelector<HTMLElement>('.stage')!;
-    type Ship = { resize(): void; start(): void; stop(): void; grab(x: number, y: number): boolean; drag(x: number, y: number): void; release(): void };
+    type Ship = { resize(): void; start(): void; stop(): void; grab(x: number, y: number): boolean; drag(x: number, y: number): void; release(): void;
+      launch(site: () => { n: any; e: any } | null, on?: (s: 'sep' | 'done') => void): void };
     let saucer: Ship | null = null, saucerCanvas: HTMLCanvasElement | null = null;
     const saucerGeom = () => {
       const r = worldSvg.getBoundingClientRect(), k = r.width / W, [tx, ty] = wp.translate();
       return { w: r.width, h: r.height, cx: tx * k, cy: ty * k, R: wp.scale() * k };
     };
-    const RICK = [
-      'Wubba lubba dub dub!', 'I turned myself into a pickle, Morty!', 'Rikki-tikki-tavi, biatch!',
-      'And that’s the waaaay the news goes!', 'Uh-oh, somersault jump!', 'Get schwifty!',
-      'Morty, this planet is *burp* a dump.', 'Nobody lives on a map on purpose, Morty.',
-      'Ultrafast X-rays, Morty. Femtoseconds! *burp*', 'One more lap, then we hit the beamtime.',
-    ];
-    const MORTY = [
-      'Oh jeez, Rick!', 'Aw geez, Rick, I don’t know about this…', 'Rick, I-I think we’re going too fast!',
-      'Oh man, oh man, oh man…', 'R-Rick, why are we going in circles?', 'Aw, c’mon Rick!',
+    // Little exchanges: Rick opens, Morty sometimes answers (or the other way round).
+    const TALK: ['rick' | 'morty', string][][] = [
+      [['rick', 'Wubba lubba dub dub!'], ['morty', 'Oh jeez, Rick!']],
+      [['rick', 'I turned myself into a pickle, Morty!'], ['morty', 'Aw geez, Rick, n-not again…']],
+      [['rick', 'Rikki-tikki-tavi, biatch!']],
+      [['rick', 'And that’s the waaaay the news goes!']],
+      [['rick', 'Uh-oh, somersault jump!'], ['morty', 'Rick, I-I think we’re going too fast!']],
+      [['rick', 'Get schwifty!']],
+      [['rick', 'Morty, this planet is *burp* a dump.'], ['morty', 'Aw, c’mon Rick, it’s kinda nice.']],
+      [['rick', 'Ultrafast X-rays, Morty. Femtoseconds! *burp*'], ['morty', 'Oh man, I don’t even know what a femtosecond is.']],
+      [['rick', 'One more lap, then we crash Den’s beamtime.']],
+      [['morty', 'R-Rick, why are we going in circles?'], ['rick', 'Because orbital mechanics, Morty! *burp*']],
+      [['morty', 'Oh man, oh man, oh man…'], ['rick', 'Relax, Morty. I’ve done this drunk a thousand times.']],
     ];
     const GRAB = [
       'Hey! Put me *burp* down, you grabby little primate!', 'Put the ship DOWN! This isn’t a petting zoo!',
       'Get your sweaty cursor off my ship!', 'Oh, real mature. Put me down!',
     ];
     const SCARED = ['Aaah! Rick, w-we’re being abducted!', 'Oh jeez oh jeez oh jeez!'];
-    const pick = (l: string[]) => l[Math.floor(Math.random() * l.length)];
+    const pick = <T,>(l: T[]) => l[Math.floor(Math.random() * l.length)];
     const quip = document.createElement('div'); quip.className = 'quip'; quip.hidden = true; quip.setAttribute('aria-live', 'polite');
-    let quipUntil = 0, shipAt = { x: 0, y: 0, r: 0, front: false }, chatter = 0;
-    const say = (who: 'rick' | 'morty', text: string, ms = 3200) => {
-      quip.className = `quip ${who}`; quip.innerHTML = `<b>${who === 'rick' ? 'Rick' : 'Morty'}</b> `;
-      quip.append(text); quipUntil = performance.now() + ms; quip.hidden = !shipAt.front;
+    let quipUntil = 0, shipAt = { x: 0, y: 0, r: 0, front: false }, chatter = 0, who: 'rick' | 'morty' = 'rick';
+    let loud = false; // launch commentary shows even while the saucer is behind the globe
+    const say = (w: 'rick' | 'morty', text: string, ms = 3600, force = false) => {
+      loud = force; who = w; quip.className = `quip ${w}`; quip.innerHTML = `<b>${w === 'rick' ? 'Rick' : 'Morty'}</b> `;
+      quip.append(text); quipUntil = performance.now() + ms; quip.hidden = !shipAt.front && !loud;
     };
     const placeQuip = (p: typeof shipAt) => {
       shipAt = p;
       if (performance.now() > quipUntil) { quip.hidden = true; return; }
-      quip.hidden = !p.front;
-      // Keep the bubble inside the map; above the ship, or below it near the top edge.
+      quip.hidden = !p.front && !loud;
+      quip.classList.toggle('free', !p.front);
+      if (!p.front) { quip.style.transform = 'translate(12px, 12px)'; return; }
+      // Keep the bubble inside the map; above the ship, or below it near the top edge. The tail
+      // points at whoever is talking: Morty sits on the left of the cockpit, Rick on the right.
       const w = quip.offsetWidth, h = quip.offsetHeight, sw = stageEl.clientWidth;
-      const x = Math.max(4, Math.min(sw - w - 4, p.x - w / 2));
+      const ax = p.x + (who === 'rick' ? 0.3 : -0.3) * p.r;
+      const x = Math.max(4, Math.min(sw - w - 4, ax - w / 2));
       const below = p.y - p.r * 0.9 - h - 10 < 0;
       const y = below ? p.y + p.r * 0.9 + 10 : p.y - p.r * 0.9 - h - 10;
       quip.classList.toggle('below', below);
-      quip.style.setProperty('--tail', `${Math.max(14, Math.min(w - 14, p.x - x))}px`);
+      quip.style.setProperty('--tail', `${Math.max(14, Math.min(w - 14, ax - x))}px`);
       quip.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
     };
+    let chatting = false;
     const chat = () => {
-      clearTimeout(chatter);
-      chatter = window.setTimeout(() => {
-        if (shipAt.front && !held) {
-          if (Math.random() < 0.6) { say('rick', pick(RICK)); if (Math.random() < 0.4) setTimeout(() => say('morty', pick(MORTY)), 3400); }
-          else say('morty', pick(MORTY));
-        }
-        chat();
-      }, 5000 + Math.random() * 6000);
+      if (chatting) return;
+      chatting = true;
+      const next = (ms: number) => { chatter = window.setTimeout(run, ms); };
+      const run = () => {
+        if (!chatting) return;
+        if (!shipAt.front || held || busy) return next(1500); // wait until they are in view
+        const lines = pick(TALK);
+        lines.forEach(([w, t], i) => setTimeout(() => chatting && !held && say(w, t), i * 3800));
+        next(lines.length * 3800 + 3000 + Math.random() * 5000);
+      };
+      next(2500);
     };
+    const hush = () => { chatting = false; clearTimeout(chatter); quip.hidden = true; };
     async function syncSaucer() {
       const show = projId === 'ortho' && !!W0 && !worldSvg.classList.contains('gone') && !worldSvg.classList.contains('flying');
-      if (!show) { saucer?.stop(); clearTimeout(chatter); quip.hidden = true; if (saucerCanvas) saucerCanvas.hidden = true; return; }
+      launchBtn.hidden = !show;
+      if (!show) { saucer?.stop(); hush(); if (saucerCanvas) saucerCanvas.hidden = true; return; }
       if (!saucerCanvas) {
         saucerCanvas = document.createElement('canvas'); saucerCanvas.className = 'saucer'; saucerCanvas.setAttribute('aria-hidden', 'true');
         stageEl.append(saucerCanvas, quip);
         const { mountSaucer } = await import('../lib/saucer');
-        saucer = mountSaucer(saucerCanvas, saucerGeom, { a: 1.3, incl: 74, tilt: -12, T: 18, size: 0.24, onFrame: placeQuip });
+        saucer = mountSaucer(saucerCanvas, saucerGeom, { a: 1.3, incl: 74, tilt: -12, T: 18, size: 0.24, wander: true, onFrame: placeQuip });
       }
       saucerCanvas.hidden = false; saucer?.resize(); saucer?.start(); chat();
     }
     new MutationObserver(() => syncSaucer()).observe(worldSvg, { attributes: true, attributeFilter: ['class'] });
     window.addEventListener('resize', () => saucer && projId === 'ortho' && saucer.resize());
+
+    // Starship from Starbase, Boca Chica: spin the globe there, launch, and let Rick comment.
+    const BOCA: [number, number] = [-97.157, 25.997];
+    const launchBtn = map.querySelector<HTMLButtonElement>('.launch')!;
+    let busy = false;
+    const unit = (lon: number, lat: number) => {
+      const [l, f] = geoRotation(spin)([lon, lat]).map((d) => (d * Math.PI) / 180);
+      return [Math.cos(f) * Math.sin(l), Math.sin(f), Math.cos(f) * Math.cos(l)];
+    };
+    const bocaSite = () => {
+      const n = unit(...BOCA), q = unit(BOCA[0] + 0.5, BOCA[1]);
+      const e = q.map((v, i) => v - n[i]), en = Math.hypot(...e);
+      return { n: { x: n[0], y: n[1], z: n[2] }, e: { x: e[0] / en, y: e[1] / en, z: e[2] / en } };
+    };
+    const MUSK_GO: ['rick' | 'morty', string][][] = [
+      [['morty', 'Whoa, Rick, l-look! A rocket!'], ['rick', 'Pfft. Elon’s big shiny *burp* bottle rocket, Morty.']],
+      [['rick', 'Oh great, Musk is compensating again.'], ['morty', 'Aw geez Rick, it’s kinda cool though.']],
+      [['morty', 'Is that Starship?!'], ['rick', 'It’s a grain silo with a Twitter account, Morty.']],
+    ];
+    const MUSK_SEP = [
+      'Hot staging. Cute. I did that in my garage in ’86.',
+      'Look, Morty, it’s throwing away half of itself. Very efficient. *burp*',
+      'Ten bucks says he posts a meme about this in five minutes.',
+    ];
+    const MUSK_END = [
+      'Call me when you’ve actually been to Mars, Elon. Oh wait, I have. *burp*',
+      'Mars, Morty? I’ve got a portal gun. Who needs Mars?',
+      'Wake me up when it lands without exploding.',
+    ];
+    const talk = (lines: ['rick' | 'morty', string][], gap = 3600) =>
+      lines.forEach(([w, t], i) => setTimeout(() => say(w, t, gap - 200, true), i * gap));
+    launchBtn.addEventListener('click', async () => {
+      if (busy || !saucer) return;
+      busy = true; launchBtn.disabled = true;
+      await turnTo(BOCA[0] + 42, BOCA[1] - 22, 1100); // pad towards the upper-left limb, so the climb is seen side-on
+      const three = await import('three');
+      const site = () => {
+        const s = bocaSite();
+        return { n: new three.Vector3(s.n.x, s.n.y, s.n.z), e: new three.Vector3(s.e.x, s.e.y, s.e.z) };
+      };
+      talk(pick(MUSK_GO));
+      saucer.launch(site, (st) => {
+        if (st === 'sep') say('rick', pick(MUSK_SEP), 3800, true);
+        else { say('rick', pick(MUSK_END), 4200, true); busy = false; launchBtn.disabled = false; }
+      });
+    });
 
     // Grab the saucer. Runs in the capture phase so the globe does not spin at the same time.
     let held = false;
@@ -726,10 +789,16 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
     font-family: 'Caveat', cursive; font-size: 19px; font-weight: 600;
   }
   .stage :global(.quip b) { font-family: Inter, system-ui, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
-  .stage :global(.quip.rick b) { color: #2a8fb8; }
-  .stage :global(.quip.morty b) { color: #c99a00; }
+  .stage :global(.quip.rick b) { color: #1f8fbf; }
+  .stage :global(.quip.morty b) { color: #c28a00; }
+  .stage :global(.quip.rick) { border-color: #1f6f95; }
+  .stage :global(.quip.morty) { border-color: #8a6400; }
   .stage :global(.quip)::after { content: ''; position: absolute; left: var(--tail, 50%); bottom: -9px; width: 12px; height: 12px; background: #fff;
     border-right: 2px solid #1b1d2a; border-bottom: 2px solid #1b1d2a; transform: translateX(-50%) rotate(45deg); }
+  .stage :global(.quip.free)::after { display: none; }
+  .launch { margin-left: auto; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink); background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+  .launch:hover { border-color: var(--accent); }
+  .launch:disabled { opacity: .55; cursor: default; }
   .stage :global(.quip.below)::after { bottom: auto; top: -9px; transform: translateX(-50%) rotate(225deg); }
   .world.swap { opacity: 0.2; transition: opacity .15s; }
   .world.gone { opacity: 0; pointer-events: none; }
