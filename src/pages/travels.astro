@@ -369,7 +369,7 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
     // often Rick or Morty says something, and grabbing the ship makes Rick complain.
     const stageEl = map.querySelector<HTMLElement>('.stage')!;
     type Ship = { resize(): void; start(): void; stop(): void; grab(x: number, y: number): boolean; drag(x: number, y: number): void; release(): void;
-      launch(site: () => { n: any; e: any } | null, on?: (s: 'sep' | 'done') => void): void };
+      launch(site: () => { n: any; e: any } | null, on?: (s: string) => void): void; portal(on?: (s: string) => void): boolean };
     let saucer: Ship | null = null, saucerCanvas: HTMLCanvasElement | null = null;
     const saucerGeom = () => {
       const r = worldSvg.getBoundingClientRect(), k = r.width / W, [tx, ty] = wp.translate();
@@ -442,6 +442,30 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
       quip.style.setProperty('--tail', `${Math.max(14, Math.min(w - 14, ax - x))}px`);
       quip.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
     };
+    // Now and then Rick fires the portal gun: in through one portal, out of another elsewhere.
+    const PORTAL_IN: Line[][] = [
+      [['rick', 'Hold on, Morty. Shortcut! *zap*']],
+      [['morty', 'R-Rick, not the portal gun again!']],
+      [['rick', 'Orbital mechanics are for suckers, Morty.']],
+      [['rick', 'Eh, this lap’s boring. *burp* Portal!']],
+    ];
+    const PORTAL_OUT: Line[][] = [
+      [['morty', 'Wh-where are we, Rick?'], ['rick', 'Same planet, different spot. *burp* Science, Morty.']],
+      [['morty', 'Oh jeez, I think I left my stomach back there.'], ['rick', 'It’ll catch up, Morty.']],
+      [['rick', 'And that’s how you skip traffic.'], ['morty', 'Th-that was awesome, Rick!']],
+      [['morty', 'Rick, is this even the same globe?'], ['rick', 'Don’t think about it too hard, Morty.']],
+    ];
+    let nextPortal = performance.now() + (location.hash === '#portal' ? 3000 : 25000 + Math.random() * 25000);
+    const tryPortal = () => {
+      if (!saucer || performance.now() < nextPortal || !idle() || !shipAt.front || held || busy) return false;
+      const ok = saucer.portal((st) => {
+        if (st === 'open') speak(pick(PORTAL_IN), true);
+        else if (st === 'out') speak(pick(PORTAL_OUT), true);
+      });
+      nextPortal = performance.now() + (ok ? 40000 + Math.random() * 40000 : 3000);
+      return ok;
+    };
+
     // Small talk while nothing else is going on, taking turns over who starts.
     let chatter = 0, chatting = false, opener: Who = 'morty';
     const chat = () => {
@@ -449,6 +473,7 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
       chatting = true;
       const tick = () => {
         if (!chatting) return;
+        if (tryPortal()) { chatter = window.setTimeout(tick, 1000); return; }
         if (idle() && shipAt.front && !held && !busy && performance.now() - quiet > 4000 + Math.random() * 5000) {
           opener = opener === 'rick' ? 'morty' : 'rick';
           speak(pick(TALK.filter((x) => x[0][0] === opener)));

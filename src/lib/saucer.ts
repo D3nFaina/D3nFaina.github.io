@@ -107,6 +107,43 @@ export function mountSaucer(canvas: HTMLCanvasElement, geom: () => OrbitGeom, op
   setOrbit();
   const rocket = makeStarship(scene);
 
+  // Portals (Rick's portal gun): a spinning green disc facing along the orbit.
+  const portalTex = new THREE.TextureLoader().load(new URL('/home/portal.png', location.href).href);
+  portalTex.colorSpace = THREE.SRGBColorSpace;
+  type Portal = { g: THREE.Group; disc: THREE.Mesh; born: number; closeAt: number };
+  const portals: Portal[] = [];
+  const Z = new THREE.Vector3(0, 0, 1);
+  const orbitPoint = (th: number) => new THREE.Vector3(a * Math.cos(th), 0, -a * Math.sin(th));
+  const orbitTangent = (th: number) => new THREE.Vector3(-Math.sin(th), 0, -Math.cos(th));
+  const openPortal = (th: number, now: number) => {
+    orbit.updateMatrixWorld();
+    const g = new THREE.Group();
+    const disc = new THREE.Mesh(new THREE.PlaneGeometry(2, 2),
+      new THREE.MeshBasicMaterial({ map: portalTex, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+    g.add(disc);
+    g.position.copy(orbit.localToWorld(orbitPoint(th)));
+    g.quaternion.setFromUnitVectors(Z, orbitTangent(th).transformDirection(orbit.matrixWorld));
+    g.scale.setScalar(0.001); scene.add(g);
+    const p = { g, disc, born: now, closeAt: Infinity };
+    portals.push(p); return p;
+  };
+  const animatePortals = (now: number) => {
+    for (let i = portals.length - 1; i >= 0; i--) {
+      const p = portals[i];
+      const o = Math.min(1, (now - p.born) / 450), c = Math.max(0, Math.min(1, (now - p.closeAt) / 350));
+      // Pops open with a little overshoot, snaps shut.
+      const back = 1.7, pop = 1 + (back + 1) * Math.pow(o - 1, 3) + back * Math.pow(o - 1, 2);
+      const k = Math.max(0.001, pop * (1 - c));
+      p.g.scale.setScalar(size * 1.45 * k);
+      p.disc.rotation.z = -now / 260;
+      if (c >= 1) { scene.remove(p.g); p.disc.geometry.dispose(); portals.splice(i, 1); }
+    }
+  };
+  // The jump: open a portal ahead, fly in, vanish, pop out of a second portal elsewhere
+  // (on a new orbit when wandering).
+  type Jump = { stage: 'in' | 'gone' | 'out'; thA: number; thB: number; A: Portal; B?: Portal; at: number; on?: (s: 'open' | 'through' | 'out' | 'done') => void };
+  let jump: Jump | null = null;
+
   let g = geom();
   const resize = () => {
     g = geom();
@@ -126,7 +163,8 @@ export function mountSaucer(canvas: HTMLCanvasElement, geom: () => OrbitGeom, op
   let held: THREE.Vector3 | null = null, back = 0, from = new THREE.Vector3();
   const place = (t: number) => {
     const dt = Math.min(0.1, (t - (lastT || t)) / 1000); lastT = t;
-    if (wander) {
+    animatePortals(t);
+    if (wander && !jump) {
       const k = 1 - Math.exp(-dt * 0.45);
       for (const key of ['incl', 'tilt', 'a'] as const) cur[key] += (tgt[key] - cur[key]) * k;
       a = cur.a; setOrbit();
@@ -152,6 +190,38 @@ export function mountSaucer(canvas: HTMLCanvasElement, geom: () => OrbitGeom, op
     ship.rotateZ(0.18 + 0.06 * Math.sin(t / 700)); // a little bank and wobble
     if (back > t) { const k = 1 - (back - t) / 700; ship.position.lerpVectors(from, on, k * k * (3 - 2 * k)); }
     else ship.position.copy(on);
+
+    let k = 1;
+    if (jump) {
+      const J = jump;
+      if (J.stage === 'in') {
+        k = Math.max(0, Math.min(1, (J.thA - th) / 0.12)); // shrinks into the portal
+        if (th >= J.thA) { J.stage = 'gone'; J.at = t; J.A.closeAt = t + 350; J.on?.('through'); }
+      } else if (J.stage === 'gone') {
+        k = 0;
+        if (t - J.at > 900) {
+          if (wander) {
+            tgt.incl = cur.incl = 50 + Math.random() * 38; tgt.tilt = cur.tilt = -40 + Math.random() * 80; tgt.a = cur.a = 1.2 + Math.random() * 0.35;
+            a = cur.a; setOrbit();
+          }
+          orbit.updateMatrixWorld();
+          // Come out somewhere on the near side, well away from where it went in.
+          let best = th + Math.PI, bz = -Infinity;
+          for (let i = 0; i < 16; i++) {
+            const c = th + Math.PI * (0.5 + Math.random());
+            const z = orbit.localToWorld(orbitPoint(c)).z;
+            if (z > bz) { bz = z; best = c; }
+          }
+          J.thB = best; phase += best - th; J.B = openPortal(best, t); J.B.closeAt = t + 1700;
+          J.stage = 'out'; J.at = t; lap = Math.floor(best / (2 * Math.PI)); J.on?.('out');
+        }
+      } else {
+        k = Math.max(0, Math.min(1, (th - J.thB) / 0.12)); // grows back out of the second portal
+        if (!J.B || t > J.B.closeAt + 400) { jump = null; J.on?.('done'); }
+      }
+    }
+    ship.visible = k > 0.01;
+    ship.scale.setScalar(size * Math.max(0.001, k));
   };
 
   // Screen position of the ship (canvas pixels) and whether it is on the near side.
@@ -179,10 +249,20 @@ export function mountSaucer(canvas: HTMLCanvasElement, geom: () => OrbitGeom, op
     // Starship from a launch site; `on` hears each stage of the flight.
     launch: (site: () => Site | null, on?: (stage: Stage) => void) => { rocket.go(site, on); start(); },
     destroy: () => { alive = false; stop(); renderer.dispose(); },
+    // Portal jump. Returns false if the ship is busy (held, already jumping, or the portal
+    // would open behind the globe).
+    portal: (on?: Jump['on']) => {
+      if (jump || held) return false;
+      const t = performance.now(), th = (t / 1000) * (2 * Math.PI / T) + phase, thA = th + 0.9;
+      orbit.updateMatrixWorld();
+      if (orbit.localToWorld(orbitPoint(thA)).z < 0.15) return false;
+      jump = { stage: 'in', thA, thB: 0, A: openPortal(thA, t), at: t, on };
+      on?.('open'); start(); return true;
+    },
     // Grab with the cursor: true when (x, y) is on the ship.
     grab: (x: number, y: number) => {
       const p = screen();
-      if (!p.front || Math.hypot(x - p.x, y - p.y) > p.r) return false;
+      if (jump || !p.front || Math.hypot(x - p.x, y - p.y) > p.r) return false;
       held = toLocal(x, y); start(); return true;
     },
     drag: (x: number, y: number) => { if (held) held = toLocal(x, y); },
