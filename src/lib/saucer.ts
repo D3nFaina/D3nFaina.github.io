@@ -3,7 +3,7 @@
 // An invisible sphere of the same radius writes depth only, so the far half of the orbit
 // disappears behind whatever the page draws there.
 import * as THREE from 'three';
-import { makeStarship, type Site } from './starship';
+import { makeStarship, type Site, type Stage } from './starship';
 
 export type OrbitGeom = { w: number; h: number; cx: number; cy: number; R: number };
 export type OrbitOpts = {
@@ -176,8 +176,8 @@ export function mountSaucer(canvas: HTMLCanvasElement, geom: () => OrbitGeom, op
   start();
   return {
     resize: () => { resize(); if (still) start(); }, start, stop, screen,
-    // Starship from a launch site; resolves at booster separation and again when it is over.
-    launch: (site: () => Site | null, on?: (stage: 'sep' | 'done') => void) => { rocket.go(site, on); start(); },
+    // Starship from a launch site; `on` hears each stage of the flight.
+    launch: (site: () => Site | null, on?: (stage: Stage) => void) => { rocket.go(site, on); start(); },
     destroy: () => { alive = false; stop(); renderer.dispose(); },
     // Grab with the cursor: true when (x, y) is on the ship.
     grab: (x: number, y: number) => {
