@@ -10,7 +10,7 @@ const balls = [
   { href: '/publications', label: 'Publications', s: 0.96, c: ['#c6f1ff', '#3fb4e0'], fx: 'earth' },
   { href: '/projects', label: 'Projects', s: 0.86, c: ['#fff1a8', '#f5a623'], fx: 'sun' },
   { href: '/cv', label: 'CV', s: 0.7, c: ['#ffd0c4', '#ef6f55'], fx: 'atom' },
-  { href: '/travels', label: 'Travels', s: 0.82, c: ['#cff5d6', '#4cbc6d'], fx: 'plane' },
+  { href: '/travels', label: 'Travels', s: 0.82, c: ['#cff5d6', '#4cbc6d'], fx: 'ufo' },
   { href: '/interests', label: 'Interests', s: 0.78, c: ['#ffd3ec', '#e866a8'], fx: 'fizz' },
   { href: '/notes', label: 'Notes', s: 0.62, c: ['#f1e6cf', '#c4a473'], fx: 'saturn' },
 ];
@@ -102,7 +102,7 @@ const balls = [
   // Satellites: bodies on tilted elliptical orbits around a ball. a = semi-major axis and
   // size = body radius, both in ball radii; e = minor/major ratio (the orbit's inclination
   // seen from here); T = period in seconds. Bodies on the far half go behind the ball.
-  type Sat = { a: number; e: number; tilt: number; size: number; color: string; T: number; ph?: number; ring?: boolean; glow?: boolean; plane?: boolean };
+  type Sat = { a: number; e: number; tilt: number; size: number; color: string; T: number; ph?: number; ring?: boolean; glow?: boolean };
   const FX: Record<string, Sat[]> = {
     sun: [
       { a: 1.32, e: 0.3, tilt: -10, size: 0.075, color: '#b9b2a8', T: 4, ring: true },
@@ -111,7 +111,6 @@ const balls = [
     ],
     earth: [{ a: 1.72, e: 0.28, tilt: 16, size: 0.2, color: '#d9dce3', T: 10, ring: true }],
     atom: [0, 60, 120].map((tilt, i) => ({ a: 1.42, e: 0.3, tilt, size: 0.09, color: '#7df9ff', T: 1.5 + i * 0.35, ph: i * 2.1, ring: true, glow: true })),
-    plane: [{ a: 1.38, e: 0.42, tilt: -18, size: 0.2, color: '#fff', T: 9, plane: true }],
   };
   const sats: { b: Ball; s: Sat; el: HTMLElement }[] = [];
   const rings: { b: Ball; s: Sat; el: HTMLElement }[] = [];
@@ -120,10 +119,30 @@ const balls = [
       const el = document.createElement('i'); el.className = 'orbit'; b.el.prepend(el); rings.push({ b, s, el });
     }
     const el = document.createElement('i');
-    el.className = s.plane ? 'sat plane' : s.glow ? 'sat glow' : 'sat';
-    if (s.plane) el.textContent = '✈'; else el.style.background = s.color;
+    el.className = s.glow ? 'sat glow' : 'sat';
+    el.style.background = s.color;
     b.el.append(el); sats.push({ b, s, el });
   }
+  // Travels: Rick's saucer, a three.js model on its own canvas around the ball. An invisible
+  // sphere the size of the ball hides the far half of the orbit.
+  const UFO = { a: 1.45, size: 0.44 };
+  const ufoBall = balls.find((b) => b.el.dataset.fx === 'ufo');
+  let ufo: { resize(): void; start(): void; stop(): void } | null = null, ufoCanvas: HTMLCanvasElement | null = null;
+  const ufoGeom = () => {
+    const r = ufoBall!.r, w = Math.ceil(2 * r * (UFO.a + UFO.size * 1.6));
+    return { w, h: w, cx: w / 2, cy: w / 2, R: r };
+  };
+  const syncUfo = async () => {
+    if (!ufoBall) return;
+    if (!on()) { ufo?.stop(); return; }
+    if (!ufoCanvas) {
+      ufoCanvas = document.createElement('canvas'); ufoCanvas.className = 'ufo'; ufoCanvas.setAttribute('aria-hidden', 'true');
+      ufoBall.el.append(ufoCanvas);
+      const { mountSaucer } = await import('../lib/saucer');
+      ufo = mountSaucer(ufoCanvas, ufoGeom, { a: UFO.a, incl: 70, tilt: -16, T: 9, size: UFO.size });
+    }
+    ufo?.resize(); ufo?.start();
+  };
   const sizeRings = () => {
     for (const { b, s, el } of rings) {
       const w = 2 * s.a * b.r, h = w * s.e;
@@ -141,13 +160,8 @@ const balls = [
       const x = ex * c - ey * sn, y = ex * sn + ey * c;
       const near = Math.sin(th) > 0; // lower half of the ellipse is the near side
       const d = 2 * s.size * b.r, k = 1 + 0.18 * Math.sin(th);
-      let rot = '';
-      if (s.plane) {
-        const tx = -A * Math.sin(th), ty = B * Math.cos(th);
-        rot = ` rotate(${Math.atan2(tx * sn + ty * c, tx * c - ty * sn) * 180 / Math.PI}deg)`;
-        el.style.fontSize = `${d}px`;
-      } else { el.style.width = el.style.height = `${d}px`; }
-      el.style.transform = `translate(${x - d / 2}px, ${y - d / 2}px) scale(${k})${rot}`;
+      el.style.width = el.style.height = `${d}px`;
+      el.style.transform = `translate(${x - d / 2}px, ${y - d / 2}px) scale(${k})`;
       el.style.zIndex = near ? '2' : '-1';
     }
   };
@@ -161,6 +175,7 @@ const balls = [
     measure(); sizeRings();
     if (!started) { started = true; place(); last = performance.now(); if (!still) requestAnimationFrame(loop); }
     draw(performance.now());
+    syncUfo();
     stage.classList.add('ready');
   };
 
@@ -219,7 +234,7 @@ const balls = [
     requestAnimationFrame(loop);
   };
   activate();
-  addEventListener('cringechange', activate);
+  addEventListener('cringechange', () => { activate(); if (!on()) ufo?.stop(); });
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; last = performance.now(); }).observe(stage);
   // Dark header while it sits over the stage.
   new IntersectionObserver(([e]) => document.body.classList.toggle('on-stage', e.isIntersecting), { rootMargin: '-64px 0px 0px 0px', threshold: 0 }).observe(stage);
@@ -227,7 +242,7 @@ const balls = [
   addEventListener('resize', () => {
     if (!started || !on()) return;
     const ow = W, oh = H;
-    measure(); sizeRings();
+    measure(); sizeRings(); ufo?.resize();
     for (const b of balls) { b.x *= W / ow; b.y *= H / oh; }
     if (still) draw();
   });
@@ -305,7 +320,7 @@ const balls = [
   .balls :global(.sat) { position: absolute; left: 50%; top: 50%; border-radius: 50%; pointer-events: none;
     box-shadow: inset -2px -3px 5px rgba(0, 0, 0, 0.35); }
   .balls :global(.sat.glow) { box-shadow: 0 0 8px 2px #7df9ff, 0 0 2px #fff; }
-  .balls :global(.sat.plane) { width: auto; height: auto; border-radius: 0; box-shadow: none; line-height: 1; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+  .balls :global(canvas.ufo) { position: absolute; left: 50%; top: 50%; z-index: 2; transform: translate(-50%, -50%); pointer-events: none; }
   .balls :global(.orbit) { position: absolute; left: 50%; top: 50%; z-index: -1; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.28); pointer-events: none; }
   .fx-atom :global(.orbit) { border-color: rgba(125, 249, 255, 0.45); }
 

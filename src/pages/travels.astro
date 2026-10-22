@@ -360,6 +360,27 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
     }
     syncPicker();
 
+    // In globe view, Rick's saucer orbits the Earth (three.js, loaded only when needed).
+    const stageEl = map.querySelector<HTMLElement>('.stage')!;
+    let saucer: { resize(): void; start(): void; stop(): void } | null = null, saucerCanvas: HTMLCanvasElement | null = null;
+    const saucerGeom = () => {
+      const r = worldSvg.getBoundingClientRect(), k = r.width / W, [tx, ty] = wp.translate();
+      return { w: r.width, h: r.height, cx: tx * k, cy: ty * k, R: wp.scale() * k };
+    };
+    async function syncSaucer() {
+      const show = projId === 'ortho' && !!W0 && !worldSvg.classList.contains('gone') && !worldSvg.classList.contains('flying');
+      if (!show) { saucer?.stop(); if (saucerCanvas) saucerCanvas.hidden = true; return; }
+      if (!saucerCanvas) {
+        saucerCanvas = document.createElement('canvas'); saucerCanvas.className = 'saucer'; saucerCanvas.setAttribute('aria-hidden', 'true');
+        stageEl.append(saucerCanvas);
+        const { mountSaucer } = await import('../lib/saucer');
+        saucer = mountSaucer(saucerCanvas, saucerGeom, { a: 1.3, incl: 74, tilt: -12, T: 18, size: 0.24 });
+      }
+      saucerCanvas.hidden = false; saucer?.resize(); saucer?.start();
+    }
+    new MutationObserver(() => syncSaucer()).observe(worldSvg, { attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('resize', () => saucer && projId === 'ortho' && saucer.resize());
+
     // Drag to spin the globe.
     let drag: { x: number; y: number; r: [number, number, number]; moved: boolean } | null = null;
     worldSvg.addEventListener('pointerdown', (e) => {
@@ -623,6 +644,7 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
   /* world */
   .world { transition: opacity .25s; touch-action: pan-y; }
   .world.globe { cursor: grab; }
+  .stage :global(canvas.saucer) { position: absolute; left: 0; top: 0; pointer-events: none; }
   .world.swap { opacity: 0.2; transition: opacity .15s; }
   .world.gone { opacity: 0; pointer-events: none; }
   .world .marks { transition: opacity .2s; }
