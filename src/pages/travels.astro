@@ -360,26 +360,99 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
     }
     syncPicker();
 
-    // In globe view, Rick's saucer orbits the Earth (three.js, loaded only when needed).
+    // In globe view, Rick's saucer orbits the Earth (three.js, loaded only when needed). Every so
+    // often Rick or Morty says something, and grabbing the ship makes Rick complain.
     const stageEl = map.querySelector<HTMLElement>('.stage')!;
-    let saucer: { resize(): void; start(): void; stop(): void } | null = null, saucerCanvas: HTMLCanvasElement | null = null;
+    type Ship = { resize(): void; start(): void; stop(): void; grab(x: number, y: number): boolean; drag(x: number, y: number): void; release(): void };
+    let saucer: Ship | null = null, saucerCanvas: HTMLCanvasElement | null = null;
     const saucerGeom = () => {
       const r = worldSvg.getBoundingClientRect(), k = r.width / W, [tx, ty] = wp.translate();
       return { w: r.width, h: r.height, cx: tx * k, cy: ty * k, R: wp.scale() * k };
     };
+    const RICK = [
+      'Wubba lubba dub dub!', 'I turned myself into a pickle, Morty!', 'Rikki-tikki-tavi, biatch!',
+      'And that’s the waaaay the news goes!', 'Uh-oh, somersault jump!', 'Get schwifty!',
+      'Morty, this planet is *burp* a dump.', 'Nobody lives on a map on purpose, Morty.',
+      'Ultrafast X-rays, Morty. Femtoseconds! *burp*', 'One more lap, then we hit the beamtime.',
+    ];
+    const MORTY = [
+      'Oh jeez, Rick!', 'Aw geez, Rick, I don’t know about this…', 'Rick, I-I think we’re going too fast!',
+      'Oh man, oh man, oh man…', 'R-Rick, why are we going in circles?', 'Aw, c’mon Rick!',
+    ];
+    const GRAB = [
+      'Hey! Put me *burp* down, you grabby little primate!', 'Put the ship DOWN! This isn’t a petting zoo!',
+      'Get your sweaty cursor off my ship!', 'Oh, real mature. Put me down!',
+    ];
+    const SCARED = ['Aaah! Rick, w-we’re being abducted!', 'Oh jeez oh jeez oh jeez!'];
+    const pick = (l: string[]) => l[Math.floor(Math.random() * l.length)];
+    const quip = document.createElement('div'); quip.className = 'quip'; quip.hidden = true; quip.setAttribute('aria-live', 'polite');
+    let quipUntil = 0, shipAt = { x: 0, y: 0, r: 0, front: false }, chatter = 0;
+    const say = (who: 'rick' | 'morty', text: string, ms = 3200) => {
+      quip.className = `quip ${who}`; quip.innerHTML = `<b>${who === 'rick' ? 'Rick' : 'Morty'}</b> `;
+      quip.append(text); quipUntil = performance.now() + ms; quip.hidden = !shipAt.front;
+    };
+    const placeQuip = (p: typeof shipAt) => {
+      shipAt = p;
+      if (performance.now() > quipUntil) { quip.hidden = true; return; }
+      quip.hidden = !p.front;
+      // Keep the bubble inside the map; above the ship, or below it near the top edge.
+      const w = quip.offsetWidth, h = quip.offsetHeight, sw = stageEl.clientWidth;
+      const x = Math.max(4, Math.min(sw - w - 4, p.x - w / 2));
+      const below = p.y - p.r * 0.9 - h - 10 < 0;
+      const y = below ? p.y + p.r * 0.9 + 10 : p.y - p.r * 0.9 - h - 10;
+      quip.classList.toggle('below', below);
+      quip.style.setProperty('--tail', `${Math.max(14, Math.min(w - 14, p.x - x))}px`);
+      quip.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+    };
+    const chat = () => {
+      clearTimeout(chatter);
+      chatter = window.setTimeout(() => {
+        if (shipAt.front && !held) {
+          if (Math.random() < 0.6) { say('rick', pick(RICK)); if (Math.random() < 0.4) setTimeout(() => say('morty', pick(MORTY)), 3400); }
+          else say('morty', pick(MORTY));
+        }
+        chat();
+      }, 5000 + Math.random() * 6000);
+    };
     async function syncSaucer() {
       const show = projId === 'ortho' && !!W0 && !worldSvg.classList.contains('gone') && !worldSvg.classList.contains('flying');
-      if (!show) { saucer?.stop(); if (saucerCanvas) saucerCanvas.hidden = true; return; }
+      if (!show) { saucer?.stop(); clearTimeout(chatter); quip.hidden = true; if (saucerCanvas) saucerCanvas.hidden = true; return; }
       if (!saucerCanvas) {
         saucerCanvas = document.createElement('canvas'); saucerCanvas.className = 'saucer'; saucerCanvas.setAttribute('aria-hidden', 'true');
-        stageEl.append(saucerCanvas);
+        stageEl.append(saucerCanvas, quip);
         const { mountSaucer } = await import('../lib/saucer');
-        saucer = mountSaucer(saucerCanvas, saucerGeom, { a: 1.3, incl: 74, tilt: -12, T: 18, size: 0.24 });
+        saucer = mountSaucer(saucerCanvas, saucerGeom, { a: 1.3, incl: 74, tilt: -12, T: 18, size: 0.24, onFrame: placeQuip });
       }
-      saucerCanvas.hidden = false; saucer?.resize(); saucer?.start();
+      saucerCanvas.hidden = false; saucer?.resize(); saucer?.start(); chat();
     }
     new MutationObserver(() => syncSaucer()).observe(worldSvg, { attributes: true, attributeFilter: ['class'] });
     window.addEventListener('resize', () => saucer && projId === 'ortho' && saucer.resize());
+
+    // Grab the saucer. Runs in the capture phase so the globe does not spin at the same time.
+    let held = false;
+    const local = (e: PointerEvent) => {
+      const r = stageEl.getBoundingClientRect();
+      return [Math.max(30, Math.min(r.width - 30, e.clientX - r.left)), Math.max(30, Math.min(r.height - 30, e.clientY - r.top))] as const;
+    };
+    stageEl.addEventListener('pointerdown', (e) => {
+      if (!saucer || saucerCanvas?.hidden || !saucer.grab(...local(e))) return;
+      e.stopPropagation(); e.preventDefault(); held = true;
+      stageEl.classList.add('holding'); stageEl.setPointerCapture(e.pointerId);
+      say('rick', pick(GRAB), 4000);
+      setTimeout(() => held && say('morty', pick(SCARED), 3000), 2600);
+    }, { capture: true });
+    stageEl.addEventListener('pointermove', (e) => { if (held) { e.stopPropagation(); saucer!.drag(...local(e)); } }, { capture: true });
+    const drop = (e: PointerEvent) => {
+      if (!held) return;
+      held = false; stageEl.classList.remove('holding'); saucer!.release();
+      try { stageEl.releasePointerCapture(e.pointerId); } catch {}
+      say('rick', 'Finally. *burp* Amateur.', 2400);
+      const stopClick = (ev: Event) => ev.stopPropagation();
+      stageEl.addEventListener('click', stopClick, { capture: true, once: true });
+      setTimeout(() => stageEl.removeEventListener('click', stopClick, { capture: true }), 50);
+    };
+    stageEl.addEventListener('pointerup', drop, { capture: true });
+    stageEl.addEventListener('pointercancel', drop, { capture: true });
 
     // Drag to spin the globe.
     let drag: { x: number; y: number; r: [number, number, number]; moved: boolean } | null = null;
@@ -645,6 +718,19 @@ const chipList = [...starCountries].sort((x, y) => label(x).localeCompare(label(
   .world { transition: opacity .25s; touch-action: pan-y; }
   .world.globe { cursor: grab; }
   .stage :global(canvas.saucer) { position: absolute; left: 0; top: 0; pointer-events: none; }
+  .stage.holding, .stage.holding :global(*) { cursor: grabbing !important; }
+  .stage :global(.quip) {
+    position: absolute; left: 0; top: 0; z-index: 3; max-width: 230px; width: max-content; pointer-events: none;
+    padding: 7px 11px; border-radius: 14px; line-height: 1.15; color: #1b1d2a;
+    background: #fff; border: 2px solid #1b1d2a; box-shadow: 0 3px 0 rgba(27, 29, 42, 0.25);
+    font-family: 'Caveat', cursive; font-size: 19px; font-weight: 600;
+  }
+  .stage :global(.quip b) { font-family: Inter, system-ui, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .stage :global(.quip.rick b) { color: #2a8fb8; }
+  .stage :global(.quip.morty b) { color: #c99a00; }
+  .stage :global(.quip)::after { content: ''; position: absolute; left: var(--tail, 50%); bottom: -9px; width: 12px; height: 12px; background: #fff;
+    border-right: 2px solid #1b1d2a; border-bottom: 2px solid #1b1d2a; transform: translateX(-50%) rotate(45deg); }
+  .stage :global(.quip.below)::after { bottom: auto; top: -9px; transform: translateX(-50%) rotate(225deg); }
   .world.swap { opacity: 0.2; transition: opacity .15s; }
   .world.gone { opacity: 0; pointer-events: none; }
   .world .marks { transition: opacity .2s; }

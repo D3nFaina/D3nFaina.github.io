@@ -12,6 +12,7 @@ export type OrbitOpts = {
   T?: number;      // period, seconds
   size?: number;   // ship radius, in sphere radii
   ph?: number;     // starting phase, radians
+  onFrame?: (p: { x: number; y: number; r: number; front: boolean }) => void; // after each frame
 };
 
 const stripMat = new THREE.MeshStandardMaterial({ color: 0xffb21c, emissive: 0xff9a00, emissiveIntensity: 0.9, side: THREE.DoubleSide });
@@ -114,24 +115,61 @@ export function mountSaucer(canvas: HTMLCanvasElement, geom: () => OrbitGeom, op
 
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const up = new THREE.Vector3(0, 1, 0);
+  let phase = ph;           // shifted when the ship is let go, so the orbit resumes from there
+  let held: THREE.Vector3 | null = null, back = 0, from = new THREE.Vector3();
   const place = (t: number) => {
-    const th = (t / 1000) * (2 * Math.PI / T) + ph;
+    if (held) {
+      // Dangling from the cursor: hold position, shake a little.
+      ship.position.lerp(held, 0.35);
+      ship.rotation.set(0.25 * Math.sin(t / 90), t / 600, 0.3 * Math.sin(t / 70));
+      return;
+    }
+    const th = (t / 1000) * (2 * Math.PI / T) + phase;
     // Counter-clockwise seen from above; the ship's nose (+z) points along its motion.
-    ship.position.set(a * Math.cos(th), 0, -a * Math.sin(th));
+    const on = new THREE.Vector3(a * Math.cos(th), 0.03 * Math.sin(t / 500), -a * Math.sin(th));
     const fwd = new THREE.Vector3(-Math.sin(th), 0, -Math.cos(th));
     ship.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(), fwd.negate(), up));
     ship.rotateZ(0.18 + 0.06 * Math.sin(t / 700)); // a little bank and wobble
-    ship.position.y = 0.03 * Math.sin(t / 500);
+    if (back > t) { const k = 1 - (back - t) / 700; ship.position.lerpVectors(from, on, k * k * (3 - 2 * k)); }
+    else ship.position.copy(on);
   };
+
+  // Screen position of the ship (canvas pixels) and whether it is on the near side.
+  const v = new THREE.Vector3();
+  const screen = () => {
+    ship.getWorldPosition(v);
+    const front = v.z > -0.05 || Math.hypot(v.x, v.y) > 1;
+    return { x: g.cx + v.x * g.R, y: g.cy - v.y * g.R, r: size * g.R * 1.1, front };
+  };
+  // Canvas pixels to a point in the orbit's own frame, a little in front of the sphere.
+  const toLocal = (x: number, y: number) => orbit.worldToLocal(new THREE.Vector3((x - g.cx) / g.R, (g.cy - y) / g.R, 1.6));
 
   let raf = 0, alive = true;
   const frame = (t: number) => {
     if (!alive) return;
     place(t); renderer.render(scene, cam);
-    if (!still) raf = requestAnimationFrame(frame);
+    opts.onFrame?.(screen());
+    if (!still || held || back > t) raf = requestAnimationFrame(frame);
   };
-  const start = () => { if (!raf || still) { cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); } };
+  const start = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); };
   const stop = () => { cancelAnimationFrame(raf); raf = 0; };
   start();
-  return { resize: () => { resize(); if (still) start(); }, start, stop, destroy: () => { alive = false; stop(); renderer.dispose(); } };
+  return {
+    resize: () => { resize(); if (still) start(); }, start, stop, screen,
+    destroy: () => { alive = false; stop(); renderer.dispose(); },
+    // Grab with the cursor: true when (x, y) is on the ship.
+    grab: (x: number, y: number) => {
+      const p = screen();
+      if (!p.front || Math.hypot(x - p.x, y - p.y) > p.r) return false;
+      held = toLocal(x, y); start(); return true;
+    },
+    drag: (x: number, y: number) => { if (held) held = toLocal(x, y); },
+    release: () => {
+      if (!held) return;
+      // Rejoin the orbit at the angle the ship was dropped at.
+      const t = performance.now(), q = ship.position;
+      phase = Math.atan2(-q.z, q.x) - (t / 1000) * (2 * Math.PI / T);
+      from = q.clone(); back = t + 700; held = null; start();
+    },
+  };
 }
